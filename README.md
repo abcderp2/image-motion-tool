@@ -6,7 +6,7 @@
 
 https://abcderp2.github.io/image-motion-tool/
 
-現在の公開版は画面下部にBuild 5と表示されます。
+現在の公開版は画面下部にBuild 6と表示されます。
 
 ## 主な特徴
 
@@ -17,6 +17,9 @@ https://abcderp2.github.io/image-motion-tool/
 - 全フレームから代表色を作る適応型GIFパレット
 - 白背景など1色が大部分を占める画像でも空の色枠を作らない
 - 透明GIFは各フレーム後に前の描画を消し、移動時の残像を防止
+- 保存したGIFそのものを別タブで開き、ブラウザの拡大機能で確認可能
+- 左右に傾くは足元、振り子は画像上部を支点にして動きの意味を分離
+- 呼吸するは足元を保った縦横伸縮、拡大は等倍から拡大して戻る周期
 - 1対1、4対5、9対16、16対9の画面比率
 - GIFは先頭と末尾がつながる周期で保存
 - 静止画像は最大1440px
@@ -28,6 +31,8 @@ https://abcderp2.github.io/image-motion-tool/
 - 外部パッケージ、ビルドツール、パッケージ管理なし
 
 画像そのものはlocalStorage、設定JSON、Service Workerのキャッシュへ保存しません。画像を外すボタンを押すと、ブラウザ内の画像参照も解放します。
+
+別タブ表示用のGIFは、生成済みのGIF Blobから端末内の一時URLを1つだけ作ります。次のGIFを生成した時またはページを閉じた時にURLを破棄し、外部へ送信しません。
 
 ## 画像の安全確認
 
@@ -76,9 +81,9 @@ GIF形式は1枚の画像で最大256色、透明度は完全な透明か不透�
 
 ## 更新が反映されない場合
 
-画面下部がBuild 5であることを確認します。Build 4以前の場合はページを閉じて開き直し、再読み込みしてください。ホーム画面へ追加した版も、いったん終了してから開き直します。
+画面下部がBuild 6であることを確認します。Build 5以前の場合はページを閉じて開き直し、再読み込みしてください。ホーム画面へ追加した版も、いったん終了してから開き直します。
 
-Build 5では画面HTMLをネットワーク優先で読み込み、Service Worker登録時にHTTPキャッシュを使わず更新確認します。設定値は同じブラウザ内に残ります。画像そのものは保存されないため、必要な画像はもう一度選択します。
+Build 6では画面HTMLをネットワーク優先で読み込み、Service Worker登録時にHTTPキャッシュを使わず更新確認します。設定値は同じブラウザ内に残ります。画像そのものと別タブ表示用の一時URLは保存されないため、必要な画像はもう一度選択し、GIFも再生成します。
 
 ## ローカル利用
 
@@ -99,7 +104,8 @@ python3 -m http.server 8000
 - index.html 画面、Build番号、ブラウザ向けセキュリティ設定
 - app.css レスポンシブ表示とアクセシビリティ
 - app-core.js 設定検査、画像ヘッダー検査、処理量計算
-- app.js 設定、履歴、描画の基礎処理
+- motion-model.js 動きごとの座標、伸縮、回転支点を端末非依存で計算
+- app.js 設定、履歴、描画、別タブ用一時URLの基礎処理
 - app-image.js 画像検査と読込処理
 - app-export.js 静止画とGIFの保存処理
 - app-events.js 画面操作、初期化、Service Worker更新
@@ -118,6 +124,7 @@ Node.jsだけで実行できます。追加パッケージは不要です。
 
 ```bash
 node --check app-core.js
+node --check motion-model.js
 node --check app.js
 node --check app-image.js
 node --check app-export.js
@@ -126,11 +133,14 @@ node --check gif-encoder.js
 node --check gif-worker.js
 node --check sw.js
 node scripts/test_app_core.mjs
+node scripts/test_motion_model.mjs
 node --max-old-space-size=64 scripts/test_gif_encoder.mjs
 node scripts/test_gif_disposal.mjs
 node --max-old-space-size=64 scripts/test_gif_dominant_color.mjs
 node scripts/check_static.mjs
 ```
+
+動きのテストは、左右に傾くが足元支点、振り子が上部支点であること、呼吸が縦横で異なる伸縮になること、拡大が等倍から拡大して等倍へ戻ること、逆向き設定で回転方向が反転することを数値で確認します。
 
 GIFのテストはヘッダーだけを確認しません。通常サイズの高エントロピーフレームを圧縮後にLZW復号し、全画素の色番号が元フレームと一致することを確認します。これにより、9ビットから12ビットへの切り替えや4096項目の辞書初期化で生じる破損を検出します。
 
@@ -138,7 +148,7 @@ GIFのテストはヘッダーだけを確認しません。通常サイズの�
 
 白背景が半分以上を占める横長イラストを正方形の透明Canvasへ配置した条件も再現します。255色のパレットが黒数色へ崩れないこと、白が白として残ること、平均色差が上限内であることを64MBヒープで確認します。
 
-GitHub Actionsでは同じ検査をPull Requestとmain更新時に実行します。公開サイトは毎回のデプロイ後と毎週確認し、公開中のBuild 5エンコーダーを取得して復号、色再現、透明フレーム残像、支配色パレットのテストを実行します。
+GitHub Actionsでは同じ検査をPull Requestとmain更新時に実行します。公開サイトは毎回のデプロイ後と毎週確認し、公開中のBuild 6エンコーダーを取得して復号、色再現、透明フレーム残像、支配色パレットのテストを実行します。
 
 ## 変更時の基本ルール
 
@@ -146,12 +156,14 @@ GitHub Actionsでは同じ検査をPull Requestとmain更新時に実行しま�
 - eval、new Function、innerHTMLによる文字列挿入を使わない
 - 新しい入力形式を増やす前に実ヘッダー検査を追加する
 - 出力解像度やフレーム数を増やす前に処理量上限を見直す
+- 動きの名前、支点、座標、伸縮を変更した場合はmotion-model.jsと数値テストを同じ変更で更新する
 - GIF圧縮を変更した場合は、生成ファイルを実際に復号する回帰テストを追加する
 - GIFの減色処理を変更した場合は、平均色差、RGBの偏り、支配色画像を検査する
 - パレット分割では空の色グループを作らない
 - 透明GIFを変更した場合は、前フレームの描画が残らないことを検査する
 - 実行ファイルを変更した場合は参照URLとBuild番号を進める
 - app.js群の画面依存処理とapp-core.jsの検査処理を混ぜない
+- 一時URLは新しいURLを作る前とpagehide時に破棄する
 - キャッシュ対象を増やす場合はsw.jsの許可一覧へ明示する
 - 変更後はMAINTENANCE.mdの手順で確認する
 
