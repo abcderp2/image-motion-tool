@@ -44,20 +44,24 @@ jobs:
           base = os.environ["SITE_URL"].rstrip("/") + "/"
           output_dir = pathlib.Path(os.environ["LIVE_TEST_DIR"])
           checks = (
-              (base, ("<title>画像モーションツール</title>", "Build 5", "gif-encoder.js?v=5")),
-              (base + "app.js?v=2", ("loadSettings", "drawFrame")),
+              (base, ("<title>画像モーションツール</title>", "Build 6", "motion-model.js?v=6", "app.js?v=6", "保存したGIFを別タブで開く")),
+              (base + "motion-model.js?v=6", ("case 'sway'", "pivotY = 0.96", "case 'pendulum'", "pivotY = 0.04")),
+              (base + "app.js?v=6", ("motionModel.motionAt", "setGifPreview", "URL.revokeObjectURL(gifPreviewObjectUrl)")),
               (base + "app-image.js?v=2", ("inspectImageFile", "loadImageFile")),
-              (base + "app-export.js?v=5", ("exportGif", "gif-worker.js?v=5", "dither: 'none'")),
-              (base + "app-events.js?v=5", ("serviceWorker", "sw.js?v=5", "updateViaCache: 'none'")),
+              (base + "app-export.js?v=6", ("exportGif", "setGifPreview(gifBlob)", "gif-worker.js?v=5", "dither: 'none'")),
+              (base + "app-events.js?v=6", ("serviceWorker", "sw.js?v=6", "clearGifPreview", "updateViaCache: 'none'")),
               (base + "app-core.js?v=2", ("SETTINGS_VERSION", "validateImageMetadata")),
               (base + "gif-encoder.js?v=5", ("GIF89a", "nextCode > (1 << codeSize)", "palette box must contain colors", "colors.length - 1")),
               (base + "gif-worker.js?v=5", ("gif-encoder.js?v=5", "encodeIndexedFrames")),
-              (base + "sw.js?v=5", ("ALLOWED_URLS", "NAVIGATION_URLS", "image-motion-tool-v5")),
+              (base + "sw.js?v=6", ("ALLOWED_URLS", "NAVIGATION_URLS", "motion-model.js?v=6", "image-motion-tool-v6")),
+              (base + "scripts/test_motion_model.mjs?v=6", ("motion model tests passed", "pivotY")),
               (base + "scripts/test_gif_encoder.mjs?v=5", ("decodeGifFrames", "GIF encoder decode regression tests passed")),
               (base + "scripts/test_gif_disposal.mjs?v=5", ("transparent full frames must clear the previous frame", "GIF transparency disposal tests passed")),
               (base + "scripts/test_gif_dominant_color.mjs?v=5", ("dominant white must not collapse the palette", "GIF dominant-color palette tests passed")),
           )
           downloads = {
+              base + "motion-model.js?v=6": output_dir / "motion-model.js",
+              base + "scripts/test_motion_model.mjs?v=6": output_dir / "scripts" / "test_motion_model.mjs",
               base + "gif-encoder.js?v=5": output_dir / "gif-encoder.js",
               base + "scripts/test_gif_encoder.mjs?v=5": output_dir / "scripts" / "test_gif_encoder.mjs",
               base + "scripts/test_gif_disposal.mjs?v=5": output_dir / "scripts" / "test_gif_disposal.mjs",
@@ -70,7 +74,7 @@ jobs:
                   request = urllib.request.Request(
                       url,
                       headers={
-                          "User-Agent": "image-motion-tool-live-check/5.0",
+                          "User-Agent": "image-motion-tool-live-check/6.0",
                           "Cache-Control": "no-cache",
                       },
                   )
@@ -98,10 +102,11 @@ jobs:
               print(f"PASSED: {url}")
           PY
 
-      - name: Test the published GIF encoder
+      - name: Test the published motion model and GIF encoder
         env:
           LIVE_TEST_DIR: ${{ runner.temp }}/image-motion-live
         run: |
+          node "${LIVE_TEST_DIR}/scripts/test_motion_model.mjs"
           node --max-old-space-size=64 "${LIVE_TEST_DIR}/scripts/test_gif_encoder.mjs"
           node "${LIVE_TEST_DIR}/scripts/test_gif_disposal.mjs"
           node --max-old-space-size=64 "${LIVE_TEST_DIR}/scripts/test_gif_dominant_color.mjs"
