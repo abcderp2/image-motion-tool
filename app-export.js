@@ -6,7 +6,7 @@ function nextTask() {
 
 function gifQualityOptions() {
   switch (settings.gifQuality) {
-    case 'high': return { adaptive: true, stride: 4, colors: 256, refineIterations: 1, dither: 'error-diffusion', ditherStrength: 0.45 };
+    case 'high': return { adaptive: true, stride: 2, colors: 256, refineIterations: 2, dither: 'none', ditherStrength: 0 };
     case 'balanced': return { adaptive: true, stride: 8, colors: 256, refineIterations: 0, dither: 'none', ditherStrength: 0 };
     default: return { adaptive: false, stride: 1, colors: 256, refineIterations: 0, dither: 'none', ditherStrength: 0 };
   }
@@ -68,7 +68,7 @@ function encodeWithWorker(frames, palette, estimate) {
   return new Promise((resolve, reject) => {
     let worker;
     try {
-      worker = new Worker('gif-worker.js?v=3');
+      worker = new Worker('gif-worker.js?v=4');
     } catch (error) {
       reject(error);
       return;
@@ -157,7 +157,7 @@ async function exportGif() {
     ensureNotCancelled();
     elements.progress.value = 100;
     downloadBlob(new Blob([encoded], { type: 'image/gif' }), `image-motion-${fileTimestamp()}.gif`);
-    setStatus('色味を保ったGIFを保存しました。');
+    setStatus('前フレームの残像を消したGIFを保存しました。');
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') setStatus('GIF生成を中止しました。');
     else setStatus(error instanceof Error ? error.message : 'GIFを生成できませんでした。');
