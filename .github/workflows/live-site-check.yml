@@ -44,20 +44,22 @@ jobs:
           base = os.environ["SITE_URL"].rstrip("/") + "/"
           output_dir = pathlib.Path(os.environ["LIVE_TEST_DIR"])
           checks = (
-              (base, ("<title>画像モーションツール</title>", "画像は外部へ送信されません", "gif-encoder.js?v=3")),
+              (base, ("<title>画像モーションツール</title>", "Build 4", "gif-encoder.js?v=4")),
               (base + "app.js?v=2", ("loadSettings", "drawFrame")),
               (base + "app-image.js?v=2", ("inspectImageFile", "loadImageFile")),
-              (base + "app-export.js?v=3", ("exportGif", "gif-worker.js?v=3")),
-              (base + "app-events.js?v=3", ("serviceWorker", "sw.js?v=3")),
+              (base + "app-export.js?v=4", ("exportGif", "gif-worker.js?v=4", "dither: 'none'")),
+              (base + "app-events.js?v=4", ("serviceWorker", "sw.js?v=4", "updateViaCache: 'none'")),
               (base + "app-core.js?v=2", ("SETTINGS_VERSION", "validateImageMetadata")),
-              (base + "gif-encoder.js?v=3", ("GIF89a", "nextCode > (1 << codeSize)")),
-              (base + "gif-worker.js?v=3", ("gif-encoder.js?v=3", "encodeIndexedFrames")),
-              (base + "sw.js?v=3", ("ALLOWED_URLS", "image-motion-tool-v3")),
-              (base + "scripts/test_gif_encoder.mjs?v=3", ("decodeGifFrames", "GIF encoder decode regression tests passed")),
+              (base + "gif-encoder.js?v=4", ("GIF89a", "nextCode > (1 << codeSize)", "transparent ? 0x09 : 0x04")),
+              (base + "gif-worker.js?v=4", ("gif-encoder.js?v=4", "encodeIndexedFrames")),
+              (base + "sw.js?v=4", ("ALLOWED_URLS", "NAVIGATION_URLS", "image-motion-tool-v4")),
+              (base + "scripts/test_gif_encoder.mjs?v=4", ("decodeGifFrames", "GIF encoder decode regression tests passed")),
+              (base + "scripts/test_gif_disposal.mjs?v=4", ("transparent full frames must clear the previous frame", "GIF transparency disposal tests passed")),
           )
           downloads = {
-              base + "gif-encoder.js?v=3": output_dir / "gif-encoder.js",
-              base + "scripts/test_gif_encoder.mjs?v=3": output_dir / "scripts" / "test_gif_encoder.mjs",
+              base + "gif-encoder.js?v=4": output_dir / "gif-encoder.js",
+              base + "scripts/test_gif_encoder.mjs?v=4": output_dir / "scripts" / "test_gif_encoder.mjs",
+              base + "scripts/test_gif_disposal.mjs?v=4": output_dir / "scripts" / "test_gif_disposal.mjs",
           }
 
           def fetch(url: str) -> tuple[int, bytes]:
@@ -65,7 +67,10 @@ jobs:
               for attempt in range(12):
                   request = urllib.request.Request(
                       url,
-                      headers={"User-Agent": "image-motion-tool-live-check/3.0"},
+                      headers={
+                          "User-Agent": "image-motion-tool-live-check/4.0",
+                          "Cache-Control": "no-cache",
+                      },
                   )
                   try:
                       with urllib.request.urlopen(request, timeout=20) as response:
@@ -91,7 +96,9 @@ jobs:
               print(f"PASSED: {url}")
           PY
 
-      - name: Decode a GIF with the published encoder
+      - name: Test the published GIF encoder
         env:
           LIVE_TEST_DIR: ${{ runner.temp }}/image-motion-live
-        run: node "${LIVE_TEST_DIR}/scripts/test_gif_encoder.mjs"
+        run: |
+          node --max-old-space-size=64 "${LIVE_TEST_DIR}/scripts/test_gif_encoder.mjs"
+          node "${LIVE_TEST_DIR}/scripts/test_gif_disposal.mjs"
