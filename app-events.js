@@ -138,13 +138,14 @@ window.addEventListener('resize', resizePreview, { passive: true });
 window.addEventListener('pagehide', () => {
   cancelAnimationFrame(animationFrame);
   if (imageObjectUrl) URL.revokeObjectURL(imageObjectUrl);
+  clearGifPreview();
   if (activeWorker) activeWorker.terminate();
 });
 
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   window.addEventListener('load', async () => {
     try {
-      const registration = await navigator.serviceWorker.register('sw.js?v=5', {
+      const registration = await navigator.serviceWorker.register('sw.js?v=6', {
         scope: './',
         updateViaCache: 'none',
       });
