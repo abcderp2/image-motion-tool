@@ -279,7 +279,9 @@
       if (nextCode < MAX_DICTIONARY_SIZE) {
         dictionary.set(key, nextCode);
         nextCode += 1;
-        if (nextCode === (1 << codeSize) && codeSize < 12) codeSize += 1;
+        // The encoder dictionary is one entry ahead of a GIF decoder. Increase the
+        // bit width only after crossing the decoder threshold, not when reaching it.
+        if (nextCode > (1 << codeSize) && codeSize < 12) codeSize += 1;
       } else {
         writer.write(clearCode, codeSize);
         resetDictionary();

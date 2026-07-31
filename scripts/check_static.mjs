@@ -10,7 +10,11 @@ for (const file of requiredFiles) await access(new URL(`../${file}`, import.meta
 
 const root = new URL('../', import.meta.url);
 const index = await readFile(new URL('index.html', root), 'utf8');
-const app = (await Promise.all(['app.js', 'app-image.js', 'app-export.js', 'app-events.js'].map((file) => readFile(new URL(file, root), 'utf8')))).join('\n');
+const appMain = await readFile(new URL('app.js', root), 'utf8');
+const appImage = await readFile(new URL('app-image.js', root), 'utf8');
+const appExport = await readFile(new URL('app-export.js', root), 'utf8');
+const appEvents = await readFile(new URL('app-events.js', root), 'utf8');
+const app = [appMain, appImage, appExport, appEvents].join('\n');
 const worker = await readFile(new URL('gif-worker.js', root), 'utf8');
 const sw = await readFile(new URL('sw.js', root), 'utf8');
 const manifest = JSON.parse(await readFile(new URL('manifest.webmanifest', root), 'utf8'));
@@ -26,6 +30,17 @@ assert.match(sw, /ALLOWED_URLS/);
 assert.doesNotMatch(sw, /cache\.put\(/);
 assert.equal(manifest.start_url, './');
 assert.equal(manifest.scope, './');
+
+assert.match(index, /gif-encoder\.js\?v=3/);
+assert.match(index, /app-export\.js\?v=3/);
+assert.match(index, /app-events\.js\?v=3/);
+assert.match(appExport, /gif-worker\.js\?v=3/);
+assert.match(appEvents, /sw\.js\?v=3/);
+assert.match(worker, /gif-encoder\.js\?v=3/);
+assert.match(sw, /image-motion-tool-v3/);
+for (const asset of ['app-export.js?v=3', 'app-events.js?v=3', 'gif-encoder.js?v=3', 'gif-worker.js?v=3']) {
+  assert.ok(sw.includes(`'./${asset}'`), `sw.js is missing ${asset}`);
+}
 
 const htmlIds = new Set([...index.matchAll(/\sid="([^"]+)"/g)].map((match) => match[1]));
 for (const match of app.matchAll(/querySelector\('#([^']+)'\)/g)) {

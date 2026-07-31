@@ -1,6 +1,6 @@
 'use strict';
 
-importScripts('gif-encoder.js?v=2');
+importScripts('gif-encoder.js?v=3');
 
 self.addEventListener('message', (event) => {
   try {

@@ -30,37 +30,46 @@ jobs:
       - name: Check published files
         env:
           SITE_URL: https://abcderp2.github.io/image-motion-tool/
+          LIVE_TEST_DIR: ${{ runner.temp }}/image-motion-live
         run: |
           python3 -I - <<'PY'
           from __future__ import annotations
 
           import os
+          import pathlib
           import time
           import urllib.error
           import urllib.request
 
           base = os.environ["SITE_URL"].rstrip("/") + "/"
+          output_dir = pathlib.Path(os.environ["LIVE_TEST_DIR"])
           checks = (
-              (base, ("<title>画像モーションツール</title>", "画像は外部へ送信されません", "app-core.js?v=2")),
+              (base, ("<title>画像モーションツール</title>", "画像は外部へ送信されません", "gif-encoder.js?v=3")),
               (base + "app.js?v=2", ("loadSettings", "drawFrame")),
               (base + "app-image.js?v=2", ("inspectImageFile", "loadImageFile")),
-              (base + "app-export.js?v=2", ("exportGif", "exportStill")),
-              (base + "app-events.js?v=2", ("serviceWorker", "imageInput")),
+              (base + "app-export.js?v=3", ("exportGif", "gif-worker.js?v=3")),
+              (base + "app-events.js?v=3", ("serviceWorker", "sw.js?v=3")),
               (base + "app-core.js?v=2", ("SETTINGS_VERSION", "validateImageMetadata")),
-              (base + "gif-encoder.js?v=2", ("GIF89a", "paletteFromHistogram")),
-              (base + "sw.js?v=2", ("ALLOWED_URLS", "image-motion-tool-v2")),
+              (base + "gif-encoder.js?v=3", ("GIF89a", "nextCode > (1 << codeSize)")),
+              (base + "gif-worker.js?v=3", ("gif-encoder.js?v=3", "encodeIndexedFrames")),
+              (base + "sw.js?v=3", ("ALLOWED_URLS", "image-motion-tool-v3")),
+              (base + "scripts/test_gif_encoder.mjs?v=3", ("decodeGifFrames", "GIF encoder decode regression tests passed")),
           )
+          downloads = {
+              base + "gif-encoder.js?v=3": output_dir / "gif-encoder.js",
+              base + "scripts/test_gif_encoder.mjs?v=3": output_dir / "scripts" / "test_gif_encoder.mjs",
+          }
 
-          def fetch(url: str) -> tuple[int, str]:
+          def fetch(url: str) -> tuple[int, bytes]:
               last_error = "request failed"
               for attempt in range(12):
                   request = urllib.request.Request(
                       url,
-                      headers={"User-Agent": "image-motion-tool-live-check/2.0"},
+                      headers={"User-Agent": "image-motion-tool-live-check/3.0"},
                   )
                   try:
                       with urllib.request.urlopen(request, timeout=20) as response:
-                          return response.status, response.read(3_000_000).decode("utf-8", errors="replace")
+                          return response.status, response.read(3_000_000)
                   except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, OSError) as error:
                       last_error = str(error)
                       if attempt < 11:
@@ -68,11 +77,21 @@ jobs:
               raise RuntimeError(last_error)
 
           for url, markers in checks:
-              status, body = fetch(url)
+              status, body_bytes = fetch(url)
               if status != 200:
                   raise SystemExit(f"{url}: HTTP {status}")
+              body = body_bytes.decode("utf-8", errors="replace")
               for marker in markers:
                   if marker not in body:
                       raise SystemExit(f"{url}: missing marker {marker}")
+              destination = downloads.get(url)
+              if destination:
+                  destination.parent.mkdir(parents=True, exist_ok=True)
+                  destination.write_bytes(body_bytes)
               print(f"PASSED: {url}")
           PY
+
+      - name: Decode a GIF with the published encoder
+        env:
+          LIVE_TEST_DIR: ${{ runner.temp }}/image-motion-live
+        run: node "${LIVE_TEST_DIR}/scripts/test_gif_encoder.mjs"
