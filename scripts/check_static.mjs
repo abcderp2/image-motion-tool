@@ -5,7 +5,7 @@ import { constants } from 'node:fs';
 const requiredFiles = [
   'index.html', 'app.css', 'app-core.js', 'app.js', 'app-image.js', 'app-export.js', 'app-events.js', 'gif-encoder.js', 'gif-worker.js',
   'sw.js', 'manifest.webmanifest', 'icon.svg', 'README.md', 'SECURITY.md', 'MAINTENANCE.md',
-  'scripts/test_gif_disposal.mjs',
+  'scripts/test_gif_disposal.mjs', 'scripts/test_gif_dominant_color.mjs',
 ];
 for (const file of requiredFiles) await access(new URL(`../${file}`, import.meta.url), constants.R_OK);
 
@@ -34,19 +34,21 @@ assert.doesNotMatch(sw, /cache\.put\(/);
 assert.equal(manifest.start_url, './');
 assert.equal(manifest.scope, './');
 
-assert.match(index, /application-version" content="4"/);
-assert.match(index, /Build 4/);
-assert.match(index, /gif-encoder\.js\?v=4/);
-assert.match(index, /app-export\.js\?v=4/);
-assert.match(index, /app-events\.js\?v=4/);
-assert.match(appExport, /gif-worker\.js\?v=4/);
-assert.match(appEvents, /sw\.js\?v=4/);
+assert.match(index, /application-version" content="5"/);
+assert.match(index, /Build 5/);
+assert.match(index, /gif-encoder\.js\?v=5/);
+assert.match(index, /app-export\.js\?v=5/);
+assert.match(index, /app-events\.js\?v=5/);
+assert.match(appExport, /gif-worker\.js\?v=5/);
+assert.match(appEvents, /sw\.js\?v=5/);
 assert.match(appEvents, /updateViaCache: 'none'/);
-assert.match(worker, /gif-encoder\.js\?v=4/);
-assert.match(sw, /image-motion-tool-v4/);
+assert.match(worker, /gif-encoder\.js\?v=5/);
+assert.match(sw, /image-motion-tool-v5/);
 assert.match(encoder, /transparent \? 0x09 : 0x04/);
+assert.match(encoder, /colors\.length - 1/);
+assert.match(encoder, /palette box must contain colors/);
 assert.doesNotMatch(appExport, /dither: 'error-diffusion'/);
-for (const asset of ['app-export.js?v=4', 'app-events.js?v=4', 'gif-encoder.js?v=4', 'gif-worker.js?v=4']) {
+for (const asset of ['app-export.js?v=5', 'app-events.js?v=5', 'gif-encoder.js?v=5', 'gif-worker.js?v=5']) {
   assert.ok(sw.includes(`'./${asset}'`), `sw.js is missing ${asset}`);
 }
 
