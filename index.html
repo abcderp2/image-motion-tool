@@ -8,18 +8,19 @@
   <meta name="description" content="画像を端末内だけで動かし、高画質GIFやPNG、JPEG、WebPへ保存できる無料ツールです。">
   <meta name="theme-color" content="#f6f8fc">
   <meta name="color-scheme" content="light">
-  <meta name="application-version" content="5">
+  <meta name="application-version" content="6">
   <link rel="canonical" href="https://abcderp2.github.io/image-motion-tool/">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="app.css?v=2">
   <title>画像モーションツール</title>
   <script src="app-core.js?v=2" defer></script>
+  <script src="motion-model.js?v=6" defer></script>
   <script src="gif-encoder.js?v=5" defer></script>
-  <script src="app.js?v=2" defer></script>
+  <script src="app.js?v=6" defer></script>
   <script src="app-image.js?v=2" defer></script>
-  <script src="app-export.js?v=5" defer></script>
-  <script src="app-events.js?v=5" defer></script>
+  <script src="app-export.js?v=6" defer></script>
+  <script src="app-events.js?v=6" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">操作画面へ移動</a>
@@ -69,13 +70,14 @@
           <button id="resetButton" class="secondary-button" type="button">設定を初期化</button>
         </div>
         <div class="control-grid">
-          <label class="control control-wide" for="preset"><span>動きの種類</span><select id="preset"><option value="float">ふわふわ上下</option><option value="bounce">ジャンプ</option><option value="shake">細かく揺れる</option><option value="sway">左右に傾く</option><option value="orbit">円を描く</option><option value="breathe">呼吸する</option><option value="zoom">ゆっくり拡大</option><option value="pendulum">振り子</option></select></label>
+          <label class="control control-wide" for="preset"><span>動きの種類</span><select id="preset"><option value="float">ふわふわ上下</option><option value="bounce">ジャンプ</option><option value="shake">細かく揺れる</option><option value="sway">左右に傾く</option><option value="orbit">円を描く</option><option value="breathe">呼吸する</option><option value="zoom">ゆっくり拡大して戻る</option><option value="pendulum">振り子</option></select></label>
           <label class="control" for="amplitude"><span>移動量 <output id="amplitudeValue" for="amplitude"></output></span><input id="amplitude" type="range" min="0" max="60" step="1"></label>
           <label class="control" for="speed"><span>プレビュー速度 <output id="speedValue" for="speed"></output></span><input id="speed" type="range" min="0.2" max="2" step="0.05"></label>
           <label class="control" for="rotation"><span>回転量 <output id="rotationValue" for="rotation"></output></span><input id="rotation" type="range" min="0" max="24" step="1"></label>
           <label class="control" for="pulse"><span>伸縮量 <output id="pulseValue" for="pulse"></output></span><input id="pulse" type="range" min="0" max="16" step="1"></label>
           <label class="control control-wide" for="zoom"><span>画像サイズ <output id="zoomValue" for="zoom"></output></span><input id="zoom" type="range" min="40" max="180" step="1"></label>
         </div>
+        <p class="help-text">左右に傾くは足元、振り子は画像上部を支点にします。呼吸するは足元を保ったまま縦横へ伸縮し、ゆっくり拡大して戻るは等倍から拡大して元へ戻ります。</p>
         <details class="advanced-settings">
           <summary>動きの詳細設定</summary>
           <div class="control-grid details-grid">
@@ -101,6 +103,10 @@
           <p id="gifEstimate" class="estimate"></p>
           <p class="help-text">高画質は色分析を増やして粒状補間を使いません。軽い端末では標準または軽量を使用してください。</p>
           <button id="exportGifButton" class="primary-button" type="button">GIFを保存</button>
+          <div class="button-row history-actions">
+            <a id="openGifPreviewLink" class="file-button secondary-file-button" target="_blank" rel="noopener noreferrer" aria-describedby="gifPreviewHelp" hidden>保存したGIFを別タブで開く</a>
+          </div>
+          <p id="gifPreviewHelp" class="help-text" hidden>生成したGIFそのものを別タブで表示します。ブラウザのピンチ操作や拡大機能で確認できます。一時URLは次のGIF生成時またはページを閉じた時に破棄します。</p>
         </fieldset>
 
         <fieldset class="export-group">
@@ -145,7 +151,7 @@
     </section>
   </main>
 
-  <footer class="site-footer"><div class="page-width"><p>画像モーションツール Build 5</p><p>外部送信なし、外部ライブラリなし、追加課金なし</p><p>公開ページは検索エンジンとAIの訪問、利用者の指示による取得、要約、引用を歓迎します。<a href="ai.txt">AI向け公開方針</a></p></div></footer>
+  <footer class="site-footer"><div class="page-width"><p>画像モーションツール Build 6</p><p>外部送信なし、外部ライブラリなし、追加課金なし</p><p>公開ページは検索エンジンとAIの訪問、利用者の指示による取得、要約、引用を歓迎します。<a href="ai.txt">AI向け公開方針</a></p></div></footer>
   <noscript><p class="noscript-message">このツールを使うにはJavaScriptを有効にしてください。</p></noscript>
 </body>
 </html>
