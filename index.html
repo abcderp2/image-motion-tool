@@ -8,17 +8,18 @@
   <meta name="description" content="画像を端末内だけで動かし、高画質GIFやPNG、JPEG、WebPへ保存できる無料ツールです。">
   <meta name="theme-color" content="#f6f8fc">
   <meta name="color-scheme" content="light">
+  <meta name="application-version" content="4">
   <link rel="canonical" href="https://abcderp2.github.io/image-motion-tool/">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="app.css?v=2">
   <title>画像モーションツール</title>
   <script src="app-core.js?v=2" defer></script>
-  <script src="gif-encoder.js?v=3" defer></script>
+  <script src="gif-encoder.js?v=4" defer></script>
   <script src="app.js?v=2" defer></script>
   <script src="app-image.js?v=2" defer></script>
-  <script src="app-export.js?v=3" defer></script>
-  <script src="app-events.js?v=3" defer></script>
+  <script src="app-export.js?v=4" defer></script>
+  <script src="app-events.js?v=4" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">操作画面へ移動</a>
@@ -95,10 +96,10 @@
             <label class="control" for="gifSize"><span>長辺サイズ</span><select id="gifSize"><option value="256">256px 軽量</option><option value="360">360px 標準</option><option value="480">480px 高精細</option></select></label>
             <label class="control" for="duration"><span>長さ</span><select id="duration"><option value="2">2秒</option><option value="3">3秒</option><option value="4">4秒</option><option value="5">5秒</option></select></label>
             <label class="control" for="fps"><span>滑らかさ</span><select id="fps"><option value="8">8fps 軽量</option><option value="10">10fps 標準</option><option value="12">12fps 滑らか</option></select></label>
-            <label class="control" for="gifQuality"><span>色品質</span><select id="gifQuality"><option value="fast">軽量 固定色</option><option value="balanced">標準 適応色</option><option value="high">高画質 適応色と補間</option></select></label>
+            <label class="control" for="gifQuality"><span>色品質</span><select id="gifQuality"><option value="fast">軽量 固定色</option><option value="balanced">標準 適応色</option><option value="high">高画質 色分析強化</option></select></label>
           </div>
           <p id="gifEstimate" class="estimate"></p>
-          <p class="help-text">高画質は色の分析を2段階で行うため時間がかかります。軽い端末では標準または軽量を使用してください。</p>
+          <p class="help-text">高画質は色分析を増やして粒状補間を使いません。軽い端末では標準または軽量を使用してください。</p>
           <button id="exportGifButton" class="primary-button" type="button">GIFを保存</button>
         </fieldset>
 
@@ -119,7 +120,7 @@
             <label class="control" for="backgroundMode"><span>背景</span><select id="backgroundMode"><option value="transparent">透明</option><option value="white">白</option><option value="black">黒</option><option value="green">グリーンバック</option><option value="custom">好きな色</option></select></label>
             <label class="control color-control" for="backgroundColor"><span>背景色</span><input id="backgroundColor" type="color" value="#ffffff"></label>
           </div>
-          <p class="help-text">JPEGで透明背景を選んだ場合は白背景になります。GIFは最大256色です。</p>
+          <p class="help-text">GIFの透明度は完全透明か不透明だけです。半透明の縁を保ちたい場合は背景色を指定してください。JPEGで透明背景を選んだ場合は白背景になります。</p>
         </details>
 
         <button id="cancelExportButton" class="danger-button cancel-button" type="button" hidden>生成を中止</button>
@@ -144,7 +145,7 @@
     </section>
   </main>
 
-  <footer class="site-footer"><div class="page-width"><p>画像モーションツール</p><p>外部送信なし、外部ライブラリなし、追加課金なし</p></div></footer>
+  <footer class="site-footer"><div class="page-width"><p>画像モーションツール Build 4</p><p>外部送信なし、外部ライブラリなし、追加課金なし</p></div></footer>
   <noscript><p class="noscript-message">このツールを使うにはJavaScriptを有効にしてください。</p></noscript>
 </body>
 </html>
