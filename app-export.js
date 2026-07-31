@@ -68,7 +68,7 @@ function encodeWithWorker(frames, palette, estimate) {
   return new Promise((resolve, reject) => {
     let worker;
     try {
-      worker = new Worker('gif-worker.js?v=4');
+      worker = new Worker('gif-worker.js?v=5');
     } catch (error) {
       reject(error);
       return;
@@ -157,7 +157,7 @@ async function exportGif() {
     ensureNotCancelled();
     elements.progress.value = 100;
     downloadBlob(new Blob([encoded], { type: 'image/gif' }), `image-motion-${fileTimestamp()}.gif`);
-    setStatus('前フレームの残像を消したGIFを保存しました。');
+    setStatus('色パレットと残像を検査したGIFを保存しました。');
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') setStatus('GIF生成を中止しました。');
     else setStatus(error instanceof Error ? error.message : 'GIFを生成できませんでした。');
