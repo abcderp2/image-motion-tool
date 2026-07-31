@@ -91,6 +91,7 @@
   }
 
   function boxStats(colors) {
+    if (!Array.isArray(colors) || colors.length === 0) throw new RangeError('palette box must contain colors');
     let count = 0;
     let minR = 255;
     let minG = 255;
@@ -121,10 +122,12 @@
     const target = box.count / 2;
     let running = 0;
     let splitIndex = 1;
-    for (; splitIndex < colors.length; splitIndex += 1) {
-      running += colors[splitIndex - 1].count;
+    for (let index = 0; index < colors.length - 1; index += 1) {
+      running += colors[index].count;
+      splitIndex = index + 1;
       if (running >= target) break;
     }
+    splitIndex = Math.max(1, Math.min(colors.length - 1, splitIndex));
     return [boxStats(colors.slice(0, splitIndex)), boxStats(colors.slice(splitIndex))];
   }
 
