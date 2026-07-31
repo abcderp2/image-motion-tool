@@ -63,7 +63,7 @@ function encodeWithWorker(frames, palette, estimate) {
   return new Promise((resolve, reject) => {
     let worker;
     try {
-      worker = new Worker('gif-worker.js?v=2');
+      worker = new Worker('gif-worker.js?v=3');
     } catch (error) {
       reject(error);
       return;
