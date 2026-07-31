@@ -40,6 +40,7 @@ jobs:
       - name: Check syntax and behavior
         run: |
           node --check app-core.js
+          node --check motion-model.js
           node --check app.js
           node --check app-image.js
           node --check app-export.js
@@ -48,6 +49,7 @@ jobs:
           node --check gif-worker.js
           node --check sw.js
           node scripts/test_app_core.mjs
+          node scripts/test_motion_model.mjs
           node --max-old-space-size=64 scripts/test_gif_encoder.mjs
           node scripts/test_gif_disposal.mjs
           node --max-old-space-size=64 scripts/test_gif_dominant_color.mjs
@@ -56,4 +58,4 @@ jobs:
 
       - name: Reject unsafe or external runtime code
         run: |
-          ! grep -RInE 'https?://[^" ]+\.(js|css)(\?|"|$)|eval[[:space:]]*\(|new Function[[:space:]]*\(|\.innerHTML[[:space:]]*=' -- index.html app-core.js app.js app-image.js app-export.js app-events.js app.css gif-encoder.js gif-worker.js sw.js
+          ! grep -RInE 'https?://[^" ]+\.(js|css)(\?|"|$)|eval[[:space:]]*\(|new Function[[:space:]]*\(|\.innerHTML[[:space:]]*=' -- index.html app-core.js motion-model.js app.js app-image.js app-export.js app-events.js app.css gif-encoder.js gif-worker.js sw.js
