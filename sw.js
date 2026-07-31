@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'image-motion-tool-v3';
+const CACHE_NAME = 'image-motion-tool-v3-color1';
 const APP_SHELL = Object.freeze([
   './',
   './index.html',
@@ -18,7 +18,9 @@ const APP_SHELL = Object.freeze([
 const ALLOWED_URLS = new Set(APP_SHELL.map((path) => new URL(path, self.registration.scope).href));
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
+  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(
+    APP_SHELL.map((path) => new Request(path, { cache: 'reload' })),
+  )));
   self.skipWaiting();
 });
 

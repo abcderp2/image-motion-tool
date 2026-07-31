@@ -6,9 +6,9 @@ function nextTask() {
 
 function gifQualityOptions() {
   switch (settings.gifQuality) {
-    case 'high': return { adaptive: true, stride: 6, colors: 255, dither: 'ordered' };
-    case 'balanced': return { adaptive: true, stride: 12, colors: 192, dither: 'none' };
-    default: return { adaptive: false, stride: 1, colors: 256, dither: 'none' };
+    case 'high': return { adaptive: true, stride: 4, colors: 256, refineIterations: 1, dither: 'error-diffusion', ditherStrength: 0.45 };
+    case 'balanced': return { adaptive: true, stride: 8, colors: 256, refineIterations: 0, dither: 'none', ditherStrength: 0 };
+    default: return { adaptive: false, stride: 1, colors: 256, refineIterations: 0, dither: 'none', ditherStrength: 0 };
   }
 }
 
@@ -35,6 +35,7 @@ async function buildGifPalette(canvas, exportContext, prepared, estimate, qualit
   return gifApi.paletteFromHistogram(histogram, {
     transparent: settings.backgroundMode === 'transparent',
     maxColors: quality.colors,
+    refineIterations: quality.refineIterations,
   });
 }
 
@@ -42,15 +43,19 @@ async function buildIndexedFrames(exportContext, prepared, estimate, palette, qu
   const frames = [];
   const progressStart = quality.adaptive ? 32 : 5;
   const progressRange = quality.adaptive ? 43 : 70;
+  const transparent = settings.backgroundMode === 'transparent';
+  const lookup = gifApi.createPaletteLookup(palette, { transparent });
   for (let index = 0; index < estimate.frames; index += 1) {
     ensureNotCancelled();
     drawFrame(exportContext, estimate.width, estimate.height, index / settings.fps, { source: prepared, forExport: true });
     const rgba = exportContext.getImageData(0, 0, estimate.width, estimate.height).data;
     frames.push(gifApi.rgbaToIndexed(rgba, {
-      transparent: settings.backgroundMode === 'transparent',
+      transparent,
       palette,
+      lookup,
       width: estimate.width,
       dither: quality.dither,
+      ditherStrength: quality.ditherStrength,
     }));
     elements.progress.value = Math.round(progressStart + ((index + 1) / estimate.frames) * progressRange);
     setStatus(`GIF用フレームを作成中 ${index + 1}/${estimate.frames}`);
@@ -152,7 +157,7 @@ async function exportGif() {
     ensureNotCancelled();
     elements.progress.value = 100;
     downloadBlob(new Blob([encoded], { type: 'image/gif' }), `image-motion-${fileTimestamp()}.gif`);
-    setStatus('継ぎ目が目立ちにくいGIFを保存しました。');
+    setStatus('色味を保ったGIFを保存しました。');
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') setStatus('GIF生成を中止しました。');
     else setStatus(error instanceof Error ? error.message : 'GIFを生成できませんでした。');
