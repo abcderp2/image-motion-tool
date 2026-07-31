@@ -6,8 +6,9 @@ if (window.top !== window.self) {
 }
 
 const core = window.ImageMotionCore;
+const motionModel = window.ImageMotionModel;
 const gifApi = window.ImageMotionGif;
-if (!core || !gifApi) throw new Error('必要な処理ファイルを読み込めませんでした。');
+if (!core || !motionModel || !gifApi) throw new Error('必要な処理ファイルを読み込めませんでした。');
 
 const elements = {
   imageInput: document.querySelector('#imageInput'),
@@ -25,6 +26,8 @@ const elements = {
   exportStillButton: document.querySelector('#exportStillButton'),
   cancelExportButton: document.querySelector('#cancelExportButton'),
   exportSettingsButton: document.querySelector('#exportSettingsButton'),
+  openGifPreviewLink: document.querySelector('#openGifPreviewLink'),
+  gifPreviewHelp: document.querySelector('#gifPreviewHelp'),
   progress: document.querySelector('#exportProgress'),
   status: document.querySelector('#status'),
   gifEstimate: document.querySelector('#gifEstimate'),
@@ -56,6 +59,7 @@ let lastCommittedSettings = { ...settings };
 let image = null;
 let imageMetadata = null;
 let imageObjectUrl = '';
+let gifPreviewObjectUrl = '';
 let playing = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 let animationStart = performance.now();
 let animationFrame = 0;
@@ -107,6 +111,22 @@ function saveSettings() {
 
 function setStatus(message) {
   elements.status.textContent = message;
+}
+
+function clearGifPreview() {
+  if (gifPreviewObjectUrl) URL.revokeObjectURL(gifPreviewObjectUrl);
+  gifPreviewObjectUrl = '';
+  elements.openGifPreviewLink.removeAttribute('href');
+  elements.openGifPreviewLink.hidden = true;
+  elements.gifPreviewHelp.hidden = true;
+}
+
+function setGifPreview(blob) {
+  clearGifPreview();
+  gifPreviewObjectUrl = URL.createObjectURL(blob);
+  elements.openGifPreviewLink.href = gifPreviewObjectUrl;
+  elements.openGifPreviewLink.hidden = false;
+  elements.gifPreviewHelp.hidden = false;
 }
 
 function applySettingsToControls() {
@@ -223,56 +243,6 @@ function backgroundColor(overrideMode) {
   }
 }
 
-function motionAt(seconds, forExport = false) {
-  const direction = settings.reverse ? -1 : 1;
-  const cycle = forExport
-    ? (seconds / settings.duration) * settings.loopCycles * Math.PI * 2 * direction
-    : seconds * settings.speed * Math.PI * 2 * direction;
-  const amount = settings.amplitude;
-  let x = 0;
-  let y = 0;
-  let rotation = 0;
-  let scale = 1;
-
-  switch (settings.preset) {
-    case 'bounce':
-      y = -Math.abs(Math.sin(cycle)) * amount;
-      rotation = Math.sin(cycle) * settings.rotation * 0.35;
-      break;
-    case 'shake':
-      x = Math.sin(cycle * 5) * amount * 0.45;
-      y = Math.sin(cycle * 7) * amount * 0.18;
-      rotation = Math.sin(cycle * 6) * settings.rotation;
-      break;
-    case 'sway':
-      x = Math.sin(cycle) * amount * 0.35;
-      rotation = Math.sin(cycle) * settings.rotation;
-      break;
-    case 'orbit':
-      x = Math.cos(cycle) * amount;
-      y = Math.sin(cycle) * amount;
-      rotation = Math.sin(cycle) * settings.rotation * 0.4;
-      break;
-    case 'breathe':
-      y = Math.sin(cycle) * amount * 0.12;
-      scale = 1 + Math.sin(cycle) * settings.pulse / 100;
-      break;
-    case 'zoom':
-      scale = 1 + ((Math.sin(cycle) + 1) / 2) * settings.pulse / 100;
-      break;
-    case 'pendulum':
-      y = Math.abs(Math.sin(cycle)) * amount * 0.12;
-      rotation = Math.sin(cycle) * settings.rotation;
-      break;
-    default:
-      y = Math.sin(cycle) * amount;
-      rotation = Math.sin(cycle) * settings.rotation * 0.3;
-      scale = 1 + Math.sin(cycle) * settings.pulse / 200;
-      break;
-  }
-  return { x, y, rotation, scale };
-}
-
 function sourceDimensions(source) {
   return {
     width: source.naturalWidth || source.width,
@@ -300,23 +270,33 @@ function drawFrame(targetContext, width, height, seconds, options = {}) {
     return;
   }
 
-  const motion = motionAt(seconds, Boolean(options.forExport));
+  const motion = motionModel.motionAt(settings, seconds, Boolean(options.forExport));
   const sourceSize = sourceDimensions(source);
   const fitScale = Math.min(width / sourceSize.width, height / sourceSize.height);
-  const zoomScale = fitScale * settings.zoom / 100 * motion.scale;
-  const drawWidth = sourceSize.width * zoomScale;
-  const drawHeight = sourceSize.height * zoomScale;
+  const baseScale = fitScale * settings.zoom / 100;
+  const baseDrawWidth = sourceSize.width * baseScale;
+  const baseDrawHeight = sourceSize.height * baseScale;
+  const drawWidth = baseDrawWidth * motion.scaleX;
+  const drawHeight = baseDrawHeight * motion.scaleY;
   const positionScale = Math.max(width, height) / 360;
   const centerX = width / 2 + (settings.offsetX + motion.x) * positionScale;
   const centerY = height / 2 + (settings.offsetY + motion.y) * positionScale;
+  const pivotX = centerX + (motion.pivotX - 0.5) * baseDrawWidth;
+  const pivotY = centerY + (motion.pivotY - 0.5) * baseDrawHeight;
 
   targetContext.save();
-  targetContext.translate(centerX, centerY);
+  targetContext.translate(pivotX, pivotY);
   targetContext.rotate(motion.rotation * Math.PI / 180);
   targetContext.scale(settings.flipped ? -1 : 1, 1);
   targetContext.imageSmoothingEnabled = true;
   targetContext.imageSmoothingQuality = 'high';
-  targetContext.drawImage(source, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+  targetContext.drawImage(
+    source,
+    -motion.pivotX * drawWidth,
+    -motion.pivotY * drawHeight,
+    drawWidth,
+    drawHeight,
+  );
   targetContext.restore();
 }
 
