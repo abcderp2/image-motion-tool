@@ -156,8 +156,10 @@ async function exportGif() {
     const encoded = await encodeGif(frames, palette, estimate);
     ensureNotCancelled();
     elements.progress.value = 100;
-    downloadBlob(new Blob([encoded], { type: 'image/gif' }), `image-motion-${fileTimestamp()}.gif`);
-    setStatus('色パレットと残像を検査したGIFを保存しました。');
+    const gifBlob = new Blob([encoded], { type: 'image/gif' });
+    setGifPreview(gifBlob);
+    downloadBlob(gifBlob, `image-motion-${fileTimestamp()}.gif`);
+    setStatus('GIFを保存しました。別タブで元のGIFを開き、拡大して確認できます。');
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') setStatus('GIF生成を中止しました。');
     else setStatus(error instanceof Error ? error.message : 'GIFを生成できませんでした。');
