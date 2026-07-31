@@ -1,0 +1,10 @@
+{
+  "name": "画像モーションツール",
+  "short_name": "画像モーション",
+  "description": "画像を端末内だけで動かしてGIFまたはPNGへ保存する無料ツール",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f6f8fc",
+  "theme_color": "#f6f8fc"
+}
