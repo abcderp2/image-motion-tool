@@ -3,12 +3,8 @@
 
   const MAX_DICTIONARY_SIZE = 4096;
   const HISTOGRAM_SIZE = 32 * 32 * 32;
-  const BAYER_4X4 = new Int8Array([
-    -8, 0, -6, 2,
-    4, -4, 6, -2,
-    -5, 3, -7, 1,
-    7, -1, 5, -3,
-  ]);
+  const DEFAULT_ERROR_STRENGTH = 0.45;
+  const MAX_ERROR = 24;
 
   function clampByte(value) {
     return Math.max(0, Math.min(255, Math.round(value)));
@@ -20,13 +16,23 @@
 
   function fixedPalette() {
     const palette = new Uint8Array(256 * 3);
-    for (let index = 0; index < 256; index += 1) {
-      const red = (index >>> 5) & 0x07;
-      const green = (index >>> 2) & 0x07;
-      const blue = index & 0x03;
-      palette[index * 3] = Math.round((red / 7) * 255);
-      palette[index * 3 + 1] = Math.round((green / 7) * 255);
-      palette[index * 3 + 2] = Math.round((blue / 3) * 255);
+    let index = 0;
+    const levels = [0, 51, 102, 153, 204, 255];
+    for (const red of levels) {
+      for (const green of levels) {
+        for (const blue of levels) {
+          palette[index * 3] = red;
+          palette[index * 3 + 1] = green;
+          palette[index * 3 + 2] = blue;
+          index += 1;
+        }
+      }
+    }
+    for (; index < 256; index += 1) {
+      const gray = Math.round(((index - 216) / 39) * 255);
+      palette[index * 3] = gray;
+      palette[index * 3 + 1] = gray;
+      palette[index * 3 + 2] = gray;
     }
     return palette;
   }
@@ -34,9 +40,9 @@
   function createColorHistogram() {
     return {
       counts: new Uint32Array(HISTOGRAM_SIZE),
-      reds: new Uint32Array(HISTOGRAM_SIZE),
-      greens: new Uint32Array(HISTOGRAM_SIZE),
-      blues: new Uint32Array(HISTOGRAM_SIZE),
+      reds: new Float64Array(HISTOGRAM_SIZE),
+      greens: new Float64Array(HISTOGRAM_SIZE),
+      blues: new Float64Array(HISTOGRAM_SIZE),
       samples: 0,
     };
   }
@@ -53,18 +59,35 @@
     const stride = Math.max(1, Math.floor(Number(options.stride) || 1));
     for (let pixel = 0; pixel < rgba.length / 4; pixel += stride) {
       const source = pixel * 4;
-      if (transparent && rgba[source + 3] < 128) continue;
+      const alpha = rgba[source + 3];
+      if (transparent && alpha < 128) continue;
+      const weight = transparent ? Math.max(1, alpha) : 255;
       const red = rgba[source];
       const green = rgba[source + 1];
       const blue = rgba[source + 2];
       const key = histogramKey(red, green, blue);
-      histogram.counts[key] += 1;
-      histogram.reds[key] += red;
-      histogram.greens[key] += green;
-      histogram.blues[key] += blue;
+      histogram.counts[key] += weight;
+      histogram.reds[key] += red * weight;
+      histogram.greens[key] += green * weight;
+      histogram.blues[key] += blue * weight;
       histogram.samples += 1;
     }
     return histogram;
+  }
+
+  function histogramColors(histogram) {
+    const colors = [];
+    for (let key = 0; key < HISTOGRAM_SIZE; key += 1) {
+      const count = histogram.counts[key];
+      if (!count) continue;
+      colors.push({
+        r: histogram.reds[key] / count,
+        g: histogram.greens[key] / count,
+        b: histogram.blues[key] / count,
+        count,
+      });
+    }
+    return colors;
   }
 
   function boxStats(colors) {
@@ -88,7 +111,8 @@
     const rangeG = maxG - minG;
     const rangeB = maxB - minB;
     const channel = rangeR >= rangeG && rangeR >= rangeB ? 'r' : (rangeG >= rangeB ? 'g' : 'b');
-    return { colors, count, rangeR, rangeG, rangeB, channel, score: Math.max(rangeR, rangeG, rangeB) * Math.sqrt(count || 1) };
+    const weightedRange = Math.max(rangeR * 2, rangeG * 3, rangeB);
+    return { colors, count, channel, score: weightedRange * Math.sqrt(count || 1) };
   }
 
   function splitBox(box) {
@@ -104,21 +128,58 @@
     return [boxStats(colors.slice(0, splitIndex)), boxStats(colors.slice(splitIndex))];
   }
 
+  function colorDistance(red, green, blue, palette, index) {
+    const offset = index * 3;
+    const deltaR = red - palette[offset];
+    const deltaG = green - palette[offset + 1];
+    const deltaB = blue - palette[offset + 2];
+    return deltaR * deltaR * 2 + deltaG * deltaG * 4 + deltaB * deltaB;
+  }
+
+  function nearestPaletteIndexExact(red, green, blue, palette, startIndex, endIndex = 256) {
+    let bestIndex = startIndex;
+    let bestDistance = Number.POSITIVE_INFINITY;
+    for (let index = startIndex; index < endIndex; index += 1) {
+      const distance = colorDistance(red, green, blue, palette, index);
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        bestIndex = index;
+        if (distance === 0) break;
+      }
+    }
+    return bestIndex;
+  }
+
+  function refinePalette(colors, palette, startIndex, colorCount, iterations) {
+    const endIndex = startIndex + colorCount;
+    for (let iteration = 0; iteration < iterations; iteration += 1) {
+      const weights = new Float64Array(256);
+      const reds = new Float64Array(256);
+      const greens = new Float64Array(256);
+      const blues = new Float64Array(256);
+      for (const color of colors) {
+        const index = nearestPaletteIndexExact(color.r, color.g, color.b, palette, startIndex, endIndex);
+        weights[index] += color.count;
+        reds[index] += color.r * color.count;
+        greens[index] += color.g * color.count;
+        blues[index] += color.b * color.count;
+      }
+      for (let index = startIndex; index < endIndex; index += 1) {
+        if (!weights[index]) continue;
+        palette[index * 3] = clampByte(reds[index] / weights[index]);
+        palette[index * 3 + 1] = clampByte(greens[index] / weights[index]);
+        palette[index * 3 + 2] = clampByte(blues[index] / weights[index]);
+      }
+    }
+  }
+
   function paletteFromHistogram(histogram, options = {}) {
     if (!histogram || !(histogram.counts instanceof Uint32Array)) throw new TypeError('invalid histogram');
     const transparent = Boolean(options.transparent);
-    const requestedColors = Math.max(2, Math.min(256 - (transparent ? 1 : 0), Math.floor(Number(options.maxColors) || 255)));
-    const colors = [];
-    for (let key = 0; key < HISTOGRAM_SIZE; key += 1) {
-      const count = histogram.counts[key];
-      if (!count) continue;
-      colors.push({
-        r: Math.round(histogram.reds[key] / count),
-        g: Math.round(histogram.greens[key] / count),
-        b: Math.round(histogram.blues[key] / count),
-        count,
-      });
-    }
+    const maximum = 256 - (transparent ? 1 : 0);
+    const requestedColors = Math.max(2, Math.min(maximum, Math.floor(Number(options.maxColors) || maximum)));
+    const refineIterations = Math.max(0, Math.min(2, Math.floor(Number(options.refineIterations) || 0)));
+    const colors = histogramColors(histogram);
     if (!colors.length) return fixedPalette();
 
     const boxes = [boxStats(colors)];
@@ -137,12 +198,8 @@
     }
 
     const palette = new Uint8Array(256 * 3);
-    let paletteIndex = transparent ? 1 : 0;
-    if (transparent) {
-      palette[0] = 0;
-      palette[1] = 0;
-      palette[2] = 0;
-    }
+    const startIndex = transparent ? 1 : 0;
+    let paletteIndex = startIndex;
     for (const box of boxes) {
       let total = 0;
       let red = 0;
@@ -160,7 +217,10 @@
       paletteIndex += 1;
       if (paletteIndex >= 256) break;
     }
-    const fallbackIndex = Math.max(transparent ? 1 : 0, paletteIndex - 1);
+    const colorCount = Math.max(1, paletteIndex - startIndex);
+    if (refineIterations) refinePalette(colors, palette, startIndex, colorCount, refineIterations);
+
+    const fallbackIndex = Math.max(startIndex, paletteIndex - 1);
     while (paletteIndex < 256) {
       palette[paletteIndex * 3] = palette[fallbackIndex * 3];
       palette[paletteIndex * 3 + 1] = palette[fallbackIndex * 3 + 1];
@@ -170,26 +230,80 @@
     return palette;
   }
 
-  function nearestPaletteIndex(red, green, blue, palette, startIndex, cache) {
-    const key = histogramKey(red, green, blue);
-    const cached = cache[key];
-    if (cached >= 0) return cached;
-    let bestIndex = startIndex;
-    let bestDistance = Number.POSITIVE_INFINITY;
-    for (let index = startIndex; index < 256; index += 1) {
-      const offset = index * 3;
-      const deltaR = red - palette[offset];
-      const deltaG = green - palette[offset + 1];
-      const deltaB = blue - palette[offset + 2];
-      const distance = deltaR * deltaR * 2 + deltaG * deltaG * 4 + deltaB * deltaB;
-      if (distance < bestDistance) {
-        bestDistance = distance;
-        bestIndex = index;
-        if (distance === 0) break;
+  function createPaletteLookup(palette, options = {}) {
+    if (!(palette instanceof Uint8Array) || palette.length !== 768) throw new TypeError('palette must contain 256 RGB colors');
+    const startIndex = options.transparent ? 1 : 0;
+    const lookup = new Uint8Array(HISTOGRAM_SIZE);
+    for (let key = 0; key < HISTOGRAM_SIZE; key += 1) {
+      const red = ((key >>> 10) & 31) * 8 + 4;
+      const green = ((key >>> 5) & 31) * 8 + 4;
+      const blue = (key & 31) * 8 + 4;
+      lookup[key] = nearestPaletteIndexExact(red, green, blue, palette, startIndex);
+    }
+    return lookup;
+  }
+
+  function mapWithoutDither(rgba, indexed, lookup, transparent) {
+    for (let pixel = 0; pixel < indexed.length; pixel += 1) {
+      const source = pixel * 4;
+      if (transparent && rgba[source + 3] < 128) {
+        indexed[pixel] = 0;
+        continue;
+      }
+      indexed[pixel] = lookup[histogramKey(rgba[source], rgba[source + 1], rgba[source + 2])];
+    }
+  }
+
+  function mapWithErrorDiffusion(rgba, indexed, palette, lookup, width, transparent, strength) {
+    const height = Math.ceil(indexed.length / width);
+    let current = new Float32Array((width + 2) * 3);
+    let next = new Float32Array((width + 2) * 3);
+    for (let y = 0; y < height; y += 1) {
+      const swap = current;
+      current = next;
+      next = swap;
+      next.fill(0);
+      const direction = y % 2 === 0 ? 1 : -1;
+      const start = direction === 1 ? 0 : width - 1;
+      const end = direction === 1 ? width : -1;
+      for (let x = start; x !== end; x += direction) {
+        const pixel = y * width + x;
+        if (pixel >= indexed.length) break;
+        const source = pixel * 4;
+        const errorOffset = (x + 1) * 3;
+        if (transparent && rgba[source + 3] < 128) {
+          indexed[pixel] = 0;
+          current[errorOffset] = 0;
+          current[errorOffset + 1] = 0;
+          current[errorOffset + 2] = 0;
+          continue;
+        }
+        const red = clampByte(rgba[source] + current[errorOffset]);
+        const green = clampByte(rgba[source + 1] + current[errorOffset + 1]);
+        const blue = clampByte(rgba[source + 2] + current[errorOffset + 2]);
+        const paletteIndex = lookup[histogramKey(red, green, blue)];
+        indexed[pixel] = paletteIndex;
+        const paletteOffset = paletteIndex * 3;
+        const errorR = Math.max(-MAX_ERROR, Math.min(MAX_ERROR, red - palette[paletteOffset])) * strength;
+        const errorG = Math.max(-MAX_ERROR, Math.min(MAX_ERROR, green - palette[paletteOffset + 1])) * strength;
+        const errorB = Math.max(-MAX_ERROR, Math.min(MAX_ERROR, blue - palette[paletteOffset + 2])) * strength;
+        const sameRow = errorOffset + direction * 3;
+        const nextBack = errorOffset - direction * 3;
+        const nextFront = errorOffset + direction * 3;
+        current[sameRow] += errorR * 7 / 16;
+        current[sameRow + 1] += errorG * 7 / 16;
+        current[sameRow + 2] += errorB * 7 / 16;
+        next[nextBack] += errorR * 3 / 16;
+        next[nextBack + 1] += errorG * 3 / 16;
+        next[nextBack + 2] += errorB * 3 / 16;
+        next[errorOffset] += errorR * 5 / 16;
+        next[errorOffset + 1] += errorG * 5 / 16;
+        next[errorOffset + 2] += errorB * 5 / 16;
+        next[nextFront] += errorR / 16;
+        next[nextFront + 1] += errorG / 16;
+        next[nextFront + 2] += errorB / 16;
       }
     }
-    cache[key] = bestIndex;
-    return bestIndex;
   }
 
   function rgbaToIndexed(rgba, options = {}) {
@@ -197,31 +311,16 @@
     if (rgba.length % 4 !== 0) throw new RangeError('rgba length must be divisible by 4');
     const transparent = Boolean(options.transparent);
     const palette = options.palette instanceof Uint8Array && options.palette.length === 768 ? options.palette : fixedPalette();
+    const lookup = options.lookup instanceof Uint8Array && options.lookup.length === HISTOGRAM_SIZE
+      ? options.lookup
+      : createPaletteLookup(palette, { transparent });
     const width = Math.max(1, Math.floor(Number(options.width) || (rgba.length / 4)));
-    const dither = options.dither === 'ordered';
     const indexed = new Uint8Array(rgba.length / 4);
-    const cache = new Int16Array(HISTOGRAM_SIZE);
-    cache.fill(-1);
-    const startIndex = transparent ? 1 : 0;
-
-    for (let pixel = 0; pixel < indexed.length; pixel += 1) {
-      const source = pixel * 4;
-      if (transparent && rgba[source + 3] < 128) {
-        indexed[pixel] = 0;
-        continue;
-      }
-      let red = rgba[source];
-      let green = rgba[source + 1];
-      let blue = rgba[source + 2];
-      if (dither) {
-        const x = pixel % width;
-        const y = Math.floor(pixel / width);
-        const adjustment = BAYER_4X4[(y & 3) * 4 + (x & 3)] * 2;
-        red = clampByte(red + adjustment);
-        green = clampByte(green + adjustment);
-        blue = clampByte(blue + adjustment);
-      }
-      indexed[pixel] = nearestPaletteIndex(red, green, blue, palette, startIndex, cache);
+    if (options.dither === 'error-diffusion') {
+      const strength = Math.max(0, Math.min(1, Number(options.ditherStrength) || DEFAULT_ERROR_STRENGTH));
+      mapWithErrorDiffusion(rgba, indexed, palette, lookup, width, transparent, strength);
+    } else {
+      mapWithoutDither(rgba, indexed, lookup, transparent);
     }
     return indexed;
   }
@@ -279,8 +378,6 @@
       if (nextCode < MAX_DICTIONARY_SIZE) {
         dictionary.set(key, nextCode);
         nextCode += 1;
-        // The encoder dictionary is one entry ahead of a GIF decoder. Increase the
-        // bit width only after crossing the decoder threshold, not when reaching it.
         if (nextCode > (1 << codeSize) && codeSize < 12) codeSize += 1;
       } else {
         writer.write(clearCode, codeSize);
@@ -351,6 +448,7 @@
     createColorHistogram,
     addRgbaToHistogram,
     paletteFromHistogram,
+    createPaletteLookup,
     rgbaToIndexed,
     encodeIndexedFrames,
   });
