@@ -18,10 +18,11 @@
 - 新しい出力は処理量とメモリ上限を追加する
 - app.jsで外部入力をHTMLとして挿入しない
 - sw.jsへ追加するのは公開に必要な固定ファイルだけにする
-- キャッシュ対象を変更したらCACHE_NAMEと変更したURLのv番号を更新する
+- キャッシュ対象を変更したらCACHE_NAMEを更新し、同じURLの資産を更新する場合はinstall時にcache reloadを使う
 - 古い設定を壊さない場合は移行処理を残す
 - 使わなくなった設定や関数は同じ変更内で削除する
 - GIF圧縮を変更した場合は、ヘッダー確認だけで終えず、生成した全フレームをLZW復号して元データと比較する
+- GIFの減色を変更した場合は、平均色差、RGB各チャンネルの偏り、64MBヒープでの実行を検査する
 
 ## ローカル検査
 
@@ -37,11 +38,13 @@ node --check gif-encoder.js
 node --check gif-worker.js
 node --check sw.js
 node scripts/test_app_core.mjs
-node scripts/test_gif_encoder.mjs
+node --max-old-space-size=64 scripts/test_gif_encoder.mjs
 node scripts/check_static.mjs
 ```
 
 scripts/test_gif_encoder.mjsは、小さな画像だけでなく、LZWのコード幅が9ビットから12ビットへ変化し、辞書が上限へ達する通常サイズのフレームを使用します。テストを軽くする目的で、この復号確認を削除しません。
+
+同じテストは肌色、グラデーション、彩度の異なる色を含む検証画像も使用します。標準と高画質について、平均色差が規定値未満であり、赤、緑、青の平均偏りが各1未満であることを確認します。しきい値を緩めて検査を通すのではなく、色変換処理を修正します。
 
 手動確認は次の順序で行います。
 
@@ -52,13 +55,16 @@ scripts/test_gif_encoder.mjsは、小さな画像だけでなく、LZWのコー�
 5. 取り消しとやり直しを確認する
 6. 4種類の画面比率を確認する
 7. 軽量、標準、高画質のGIFを保存し、別のブラウザ画面で開いて先頭、中間、終端の表示を確認する
-8. PNG、JPEG、WebPを保存する
-9. 設定JSONを書き出し、読み戻す
-10. 画像を外した後も設定だけが残ることを確認する
-11. オフラインで再読み込みする
-12. 画面を拡大しても操作不能にならないことを確認する
+8. 元画像とGIFを並べ、肌色、白、黒、グレー、青、赤、グラデーションに不自然な色かぶりがないことを確認する
+9. PNG、JPEG、WebPを保存する
+10. 設定JSONを書き出し、読み戻す
+11. 画像を外した後も設定だけが残ることを確認する
+12. オフラインで再読み込みする
+13. 画面を拡大しても操作不能にならないことを確認する
 
 GIFの不具合では、ファイルを開けるかだけで判断しません。破損したGIFでもブラウザがエラー補正して表示する場合があります。保存した画像の色、動き、全体の欠落がないことまで確認します。
+
+GIFは最大256色で、半透明を保持できません。完全一致しないことを理由に検査を省略せず、仕様上必要な減色と実装による余分な色ずれを分けて判断します。静止画像の完全な色保持が必要な場合はPNGを比較対象にします。
 
 ## Pull Request
 
@@ -76,13 +82,14 @@ Pull Request本文には次を記載します。
 ## 公開後
 
 1. GitHub Pagesの公開完了を確認する
-2. Live site checkが公開中のgif-encoder.jsを取得し、LZW復号テストまで成功したことを確認する
+2. Live site checkが公開中のgif-encoder.jsを取得し、LZW復号テストと色再現テストまで成功したことを確認する
 3. 公開URLを通常ウィンドウで開く
-4. index.htmlが新しいgif-encoder.js、app-export.js、app-events.js、sw.jsのv番号を参照していることを確認する
-5. 画像を読み込み、最低1つのGIFと静止画像を保存する
+4. Service Worker更新後にページを再読み込みする
+5. 画像を読み込み、標準と高画質のGIF、静止PNGを保存する
 6. 保存したGIFを新しいタブで開き、色と動きが途中で壊れていないことを確認する
-7. ブラウザを再読み込みし、新しいService Workerが使われることを確認する
-8. 問題がなければPull Requestを閉じた状態で残す
+7. GIFとPNGを並べ、仕様上の減色を超える色かぶりがないことを確認する
+8. オフラインで再読み込みし、更新後の資産が使われることを確認する
+9. 問題がなければPull Requestを閉じた状態で残す
 
 ## 切り戻し
 
@@ -94,7 +101,7 @@ GitHub上で問題のPull Requestを開き、Revertを選択して取り消し�
 
 ```bash
 node scripts/test_app_core.mjs
-node scripts/test_gif_encoder.mjs
+node --max-old-space-size=64 scripts/test_gif_encoder.mjs
 node scripts/check_static.mjs
 ```
 
@@ -113,5 +120,6 @@ Service Workerの変更を戻した場合は、CACHE_NAMEを新しい値へ進�
 - 自動検査、README、SECURITY.md、MAINTENANCE.mdも更新する条件
 - 専用ブランチ、Pull Request、自動検査後にマージする条件
 - マージ後に公開版のファイルと実際の出力を確認する条件
+- GIF変更ではLZW復号と色差の数値検査を省略しない条件
 
 AIが提案したコードは、説明だけで判断せず、必ず自動検査と公開前後の動作確認を通します。
