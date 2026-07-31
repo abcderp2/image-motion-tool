@@ -18,12 +18,16 @@
 - Service Workerは許可一覧にあるアプリファイルだけをキャッシュする
 - GitHub Actionsの権限を必要最小限にする
 - 画像本体をlocalStorageやCache Storageへ保存しない
+- 別タブ表示用のGIFは生成済みBlobから一時URLを1つだけ作り、次の生成時とpagehide時に破棄する
+- 別タブ用リンクにnoopenerとnoreferrerを指定し、開いたページから元画面を操作できないようにする
 
 ## 静的ホスティング上の限界
 
 Content Security PolicyとPermissions-PolicyはHTMLのmeta要素で方針を明示しています。meta要素ではframe-ancestorsが有効にならないため、アプリ側でも埋め込み表示を検出して操作を停止します。HTTPレスポンスヘッダーを自由に設定できるホスティングへ移行する場合は、Content-Security-Policyヘッダーのframe-ancestors 'none'、X-Content-Type-Options nosniff、不要な端末APIを無効化するPermissions-Policyを追加してください。
 
 robots.txtとai.txtは公開方針であり、認証やアクセス制御ではありません。端末内処理でも、壊れた画像や極端に大きい画像がブラウザの画像デコーダーへ負荷を与える可能性は残ります。そのため、ヘッダー確認と端末別上限を画像展開前に実施します。
+
+Blob URLは同じブラウザ内で生成物を表示するための一時的な参照です。外部送信ではありませんが、URLを保持している間はそのブラウザ内でGIFへアクセスできます。このため、同時保持を1件に制限し、更新時とページ離脱時に明示的に破棄します。Service Workerの許可一覧にはBlob URLを含めません。
 
 ## 脆弱性の連絡
 
