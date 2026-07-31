@@ -426,7 +426,7 @@
 
     for (const frame of frames) {
       if (!(frame instanceof Uint8Array) || frame.length !== pixelCount) throw new RangeError('frame size does not match GIF dimensions');
-      const packed = transparent ? 0x05 : 0x04;
+      const packed = transparent ? 0x09 : 0x04;
       bytes.push(0x21, 0xf9, 0x04, packed);
       writeU16(bytes, delay);
       bytes.push(0x00, 0x00);

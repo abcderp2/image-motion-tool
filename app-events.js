@@ -142,10 +142,16 @@ window.addEventListener('pagehide', () => {
 });
 
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js?v=3', { scope: './' }).catch(() => {
+  window.addEventListener('load', async () => {
+    try {
+      const registration = await navigator.serviceWorker.register('sw.js?v=4', {
+        scope: './',
+        updateViaCache: 'none',
+      });
+      await registration.update();
+    } catch {
       setStatus('オフライン起動の準備に失敗しました。通常の利用は続けられます。');
-    });
+    }
   }, { once: true });
 }
 

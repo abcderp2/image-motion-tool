@@ -5,6 +5,7 @@ import { constants } from 'node:fs';
 const requiredFiles = [
   'index.html', 'app.css', 'app-core.js', 'app.js', 'app-image.js', 'app-export.js', 'app-events.js', 'gif-encoder.js', 'gif-worker.js',
   'sw.js', 'manifest.webmanifest', 'icon.svg', 'README.md', 'SECURITY.md', 'MAINTENANCE.md',
+  'scripts/test_gif_disposal.mjs',
 ];
 for (const file of requiredFiles) await access(new URL(`../${file}`, import.meta.url), constants.R_OK);
 
@@ -15,6 +16,7 @@ const appImage = await readFile(new URL('app-image.js', root), 'utf8');
 const appExport = await readFile(new URL('app-export.js', root), 'utf8');
 const appEvents = await readFile(new URL('app-events.js', root), 'utf8');
 const app = [appMain, appImage, appExport, appEvents].join('\n');
+const encoder = await readFile(new URL('gif-encoder.js', root), 'utf8');
 const worker = await readFile(new URL('gif-worker.js', root), 'utf8');
 const sw = await readFile(new URL('sw.js', root), 'utf8');
 const manifest = JSON.parse(await readFile(new URL('manifest.webmanifest', root), 'utf8'));
@@ -27,18 +29,24 @@ assert.doesNotMatch(index, /<link[^>]+href="https?:\/\/[^\"]+\.css/i);
 assert.doesNotMatch(app, /\.innerHTML\s*=|eval\s*\(|new Function\s*\(/);
 assert.doesNotMatch(worker, /https?:\/\//);
 assert.match(sw, /ALLOWED_URLS/);
+assert.match(sw, /NAVIGATION_URLS/);
 assert.doesNotMatch(sw, /cache\.put\(/);
 assert.equal(manifest.start_url, './');
 assert.equal(manifest.scope, './');
 
-assert.match(index, /gif-encoder\.js\?v=3/);
-assert.match(index, /app-export\.js\?v=3/);
-assert.match(index, /app-events\.js\?v=3/);
-assert.match(appExport, /gif-worker\.js\?v=3/);
-assert.match(appEvents, /sw\.js\?v=3/);
-assert.match(worker, /gif-encoder\.js\?v=3/);
-assert.match(sw, /image-motion-tool-v3/);
-for (const asset of ['app-export.js?v=3', 'app-events.js?v=3', 'gif-encoder.js?v=3', 'gif-worker.js?v=3']) {
+assert.match(index, /application-version" content="4"/);
+assert.match(index, /Build 4/);
+assert.match(index, /gif-encoder\.js\?v=4/);
+assert.match(index, /app-export\.js\?v=4/);
+assert.match(index, /app-events\.js\?v=4/);
+assert.match(appExport, /gif-worker\.js\?v=4/);
+assert.match(appEvents, /sw\.js\?v=4/);
+assert.match(appEvents, /updateViaCache: 'none'/);
+assert.match(worker, /gif-encoder\.js\?v=4/);
+assert.match(sw, /image-motion-tool-v4/);
+assert.match(encoder, /transparent \? 0x09 : 0x04/);
+assert.doesNotMatch(appExport, /dither: 'error-diffusion'/);
+for (const asset of ['app-export.js?v=4', 'app-events.js?v=4', 'gif-encoder.js?v=4', 'gif-worker.js?v=4']) {
   assert.ok(sw.includes(`'./${asset}'`), `sw.js is missing ${asset}`);
 }
 

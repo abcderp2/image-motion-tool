@@ -49,6 +49,7 @@ jobs:
           node --check sw.js
           node scripts/test_app_core.mjs
           node --max-old-space-size=64 scripts/test_gif_encoder.mjs
+          node scripts/test_gif_disposal.mjs
           node scripts/check_static.mjs
           python3 -m json.tool manifest.webmanifest >/dev/null
 

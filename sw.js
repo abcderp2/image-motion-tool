@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'image-motion-tool-v3-color1';
+const CACHE_NAME = 'image-motion-tool-v4';
 const APP_SHELL = Object.freeze([
   './',
   './index.html',
@@ -8,14 +8,18 @@ const APP_SHELL = Object.freeze([
   './app-core.js?v=2',
   './app.js?v=2',
   './app-image.js?v=2',
-  './app-export.js?v=3',
-  './app-events.js?v=3',
-  './gif-encoder.js?v=3',
-  './gif-worker.js?v=3',
+  './app-export.js?v=4',
+  './app-events.js?v=4',
+  './gif-encoder.js?v=4',
+  './gif-worker.js?v=4',
   './manifest.webmanifest',
   './icon.svg',
 ]);
 const ALLOWED_URLS = new Set(APP_SHELL.map((path) => new URL(path, self.registration.scope).href));
+const NAVIGATION_URLS = new Set([
+  new URL('./', self.registration.scope).href,
+  new URL('./index.html', self.registration.scope).href,
+]);
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(
@@ -38,7 +42,10 @@ self.addEventListener('fetch', (event) => {
   const requestUrl = new URL(event.request.url);
   if (requestUrl.origin !== self.location.origin || !ALLOWED_URLS.has(requestUrl.href)) return;
 
-  event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request)),
-  );
+  if (event.request.mode === 'navigate' || NAVIGATION_URLS.has(requestUrl.href)) {
+    event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
+    return;
+  }
+
+  event.respondWith(caches.match(event.request).then((cached) => cached || fetch(event.request)));
 });
