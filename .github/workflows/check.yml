@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - name: Check out without an external action
+      - name: Check out exact revision without an external action
         env:
           REPOSITORY: ${{ github.repository }}
           REF: ${{ github.ref }}
@@ -37,17 +37,21 @@ jobs:
           git checkout --detach FETCH_HEAD
           test "$(git rev-parse HEAD)" = "${EXPECTED_SHA}"
 
-      - name: Check files and GIF encoder
+      - name: Check syntax and behavior
         run: |
-          test -s index.html
-          test -s app.css
-          test -s app.js
-          test -s gif-encoder.js
-          test -s gif-worker.js
-          test -s sw.js
+          node --check app-core.js
           node --check app.js
+          node --check app-image.js
+          node --check app-export.js
+          node --check app-events.js
           node --check gif-encoder.js
           node --check gif-worker.js
           node --check sw.js
+          node scripts/test_app_core.mjs
           node scripts/test_gif_encoder.mjs
-          ! grep -RInE 'https?://[^" ]+\.(js|css)(\?|"|$)|eval\(|new Function\(' -- index.html app.js app.css gif-encoder.js gif-worker.js sw.js
+          node scripts/check_static.mjs
+          python3 -m json.tool manifest.webmanifest >/dev/null
+
+      - name: Reject unsafe or external runtime code
+        run: |
+          ! grep -RInE 'https?://[^" ]+\.(js|css)(\?|"|$)|eval[[:space:]]*\(|new Function[[:space:]]*\(|\.innerHTML[[:space:]]*=' -- index.html app-core.js app.js app-image.js app-export.js app-events.js app.css gif-encoder.js gif-worker.js sw.js

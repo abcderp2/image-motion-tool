@@ -1,0 +1,38 @@
+name: 不具合報告
+description: 再現できる不具合を報告します
+title: "不具合: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        個人情報や公開できない画像は添付しないでください。脆弱性の可能性がある場合はSECURITY.mdを確認してください。
+  - type: textarea
+    id: problem
+    attributes:
+      label: 起きたこと
+      description: 表示された文や操作結果を記載してください。
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 再現手順
+      description: 画像を公開できない場合は、形式、容量、縦横だけを記載してください。
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: 端末とOS
+      placeholder: 例 Android 15のスマートフォン
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: ブラウザ
+      placeholder: 例 Chrome
+    validations:
+      required: true

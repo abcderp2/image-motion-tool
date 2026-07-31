@@ -1,15 +1,21 @@
 'use strict';
 
-const CACHE_NAME = 'image-motion-tool-v1';
-const APP_SHELL = [
+const CACHE_NAME = 'image-motion-tool-v2';
+const APP_SHELL = Object.freeze([
   './',
   './index.html',
-  './app.css?v=1',
-  './app.js?v=1',
-  './gif-encoder.js?v=1',
-  './gif-worker.js?v=1',
+  './app.css?v=2',
+  './app-core.js?v=2',
+  './app.js?v=2',
+  './app-image.js?v=2',
+  './app-export.js?v=2',
+  './app-events.js?v=2',
+  './gif-encoder.js?v=2',
+  './gif-worker.js?v=2',
   './manifest.webmanifest',
-];
+  './icon.svg',
+]);
+const ALLOWED_URLS = new Set(APP_SHELL.map((path) => new URL(path, self.registration.scope).href));
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
@@ -17,18 +23,20 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)))));
+  event.waitUntil(
+    caches.keys().then((keys) => Promise.all(
+      keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)),
+    )),
+  );
   self.clients.claim();
 });
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   const requestUrl = new URL(event.request.url);
-  if (requestUrl.origin !== self.location.origin) return;
-  event.respondWith(caches.match(event.request, { ignoreSearch: true }).then((cached) => cached || fetch(event.request).then((response) => {
-    if (!response || response.status !== 200 || response.type !== 'basic') return response;
-    const copy = response.clone();
-    caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
-    return response;
-  })));
+  if (requestUrl.origin !== self.location.origin || !ALLOWED_URLS.has(requestUrl.href)) return;
+
+  event.respondWith(
+    caches.match(event.request).then((cached) => cached || fetch(event.request)),
+  );
 });

@@ -3,17 +3,22 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; connect-src 'none'; font-src 'none'; form-action 'none'; frame-ancestors 'none'; frame-src 'none'; img-src 'self' blob:; manifest-src 'self'; media-src 'none'; object-src 'none'; script-src 'self'; style-src 'self'; worker-src 'self'; upgrade-insecure-requests">
-  <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), payment=(), usb=()">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; connect-src 'none'; font-src 'none'; form-action 'none'; frame-src 'none'; img-src 'self' blob:; manifest-src 'self'; media-src 'none'; object-src 'none'; script-src 'self'; script-src-attr 'none'; style-src 'self'; style-src-attr 'none'; worker-src 'self'; upgrade-insecure-requests">
   <meta name="referrer" content="no-referrer">
-  <meta name="description" content="画像を端末内だけで上下移動、揺れ、回転などのGIFに変換できる無料ツールです。">
+  <meta name="description" content="画像を端末内だけで動かし、高画質GIFやPNG、JPEG、WebPへ保存できる無料ツールです。">
   <meta name="theme-color" content="#f6f8fc">
+  <meta name="color-scheme" content="light">
   <link rel="canonical" href="https://abcderp2.github.io/image-motion-tool/">
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="app.css?v=1">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="app.css?v=2">
   <title>画像モーションツール</title>
-  <script src="gif-encoder.js?v=1" defer></script>
-  <script src="app.js?v=1" defer></script>
+  <script src="app-core.js?v=2" defer></script>
+  <script src="gif-encoder.js?v=2" defer></script>
+  <script src="app.js?v=2" defer></script>
+  <script src="app-image.js?v=2" defer></script>
+  <script src="app-export.js?v=2" defer></script>
+  <script src="app-events.js?v=2" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">操作画面へ移動</a>
@@ -22,7 +27,7 @@
       <div>
         <p class="eyebrow">無料、登録不要、端末内処理</p>
         <h1>画像モーションツール</h1>
-        <p class="lead">1枚の画像へ上下移動、揺れ、回転、呼吸風の動きを付け、GIFまたはPNGで保存します。</p>
+        <p class="lead">1枚の画像へ動きを付け、GIFまたは静止画像として保存します。画像は端末外へ送信しません。</p>
       </div>
       <a class="back-link" href="https://github.com/abcderp2/image-motion-tool" target="_blank" rel="noopener noreferrer">GitHub</a>
     </div>
@@ -31,7 +36,7 @@
   <main id="main" class="page-width">
     <section class="notice" aria-labelledby="privacy-title">
       <h2 id="privacy-title">画像は外部へ送信されません</h2>
-      <p>選択した画像とGIF生成は、この端末のブラウザ内だけで処理します。外部API、広告、アクセス解析、アカウント登録は使用しません。</p>
+      <p>画像の読み込み、加工、保存はブラウザ内で完結します。外部API、広告、アクセス解析、アカウント登録は使用しません。</p>
     </section>
 
     <div class="app-layout">
@@ -44,11 +49,16 @@
         <div class="canvas-shell">
           <canvas id="previewCanvas" width="360" height="360" tabindex="0" aria-label="アニメーションプレビュー。画像を指でドラッグできます。矢印キーでも位置を変更できます。"></canvas>
         </div>
-        <p class="help-text">PNG、JPEG、WebP、15MB以下。画像を指でドラッグして位置を調整できます。</p>
-        <div class="button-row">
+        <p class="help-text">PNG、JPEG、WebP、15MB以下。形式と寸法を読み込み前に確認します。画像を指でドラッグして位置を調整できます。</p>
+        <div class="button-row preview-actions">
           <button id="playButton" type="button" aria-pressed="false">一時停止</button>
           <button id="centerButton" type="button">中央へ戻す</button>
           <button id="flipButton" type="button" aria-pressed="false">左右反転</button>
+          <button id="removeImageButton" type="button">画像を外す</button>
+        </div>
+        <div class="button-row history-actions" aria-label="操作履歴">
+          <button id="undoButton" type="button">1つ戻す</button>
+          <button id="redoButton" type="button">やり直す</button>
         </div>
       </section>
 
@@ -58,32 +68,62 @@
           <button id="resetButton" class="secondary-button" type="button">設定を初期化</button>
         </div>
         <div class="control-grid">
-          <label class="control control-wide" for="preset"><span>動きの種類</span><select id="preset"><option value="float">ふわふわ上下</option><option value="bounce">ジャンプ</option><option value="shake">細かく揺れる</option><option value="sway">左右に傾く</option><option value="orbit">円を描く</option><option value="breathe">呼吸する</option></select></label>
+          <label class="control control-wide" for="preset"><span>動きの種類</span><select id="preset"><option value="float">ふわふわ上下</option><option value="bounce">ジャンプ</option><option value="shake">細かく揺れる</option><option value="sway">左右に傾く</option><option value="orbit">円を描く</option><option value="breathe">呼吸する</option><option value="zoom">ゆっくり拡大</option><option value="pendulum">振り子</option></select></label>
           <label class="control" for="amplitude"><span>移動量 <output id="amplitudeValue" for="amplitude"></output></span><input id="amplitude" type="range" min="0" max="60" step="1"></label>
-          <label class="control" for="speed"><span>速度 <output id="speedValue" for="speed"></output></span><input id="speed" type="range" min="0.2" max="2" step="0.05"></label>
-          <label class="control" for="rotation"><span>回転量 <output id="rotationValue" for="rotation"></output></span><input id="rotation" type="range" min="0" max="18" step="1"></label>
-          <label class="control" for="pulse"><span>伸縮量 <output id="pulseValue" for="pulse"></output></span><input id="pulse" type="range" min="0" max="12" step="1"></label>
-          <label class="control control-wide" for="zoom"><span>画像サイズ <output id="zoomValue" for="zoom"></output></span><input id="zoom" type="range" min="40" max="140" step="1"></label>
+          <label class="control" for="speed"><span>プレビュー速度 <output id="speedValue" for="speed"></output></span><input id="speed" type="range" min="0.2" max="2" step="0.05"></label>
+          <label class="control" for="rotation"><span>回転量 <output id="rotationValue" for="rotation"></output></span><input id="rotation" type="range" min="0" max="24" step="1"></label>
+          <label class="control" for="pulse"><span>伸縮量 <output id="pulseValue" for="pulse"></output></span><input id="pulse" type="range" min="0" max="16" step="1"></label>
+          <label class="control control-wide" for="zoom"><span>画像サイズ <output id="zoomValue" for="zoom"></output></span><input id="zoom" type="range" min="40" max="180" step="1"></label>
         </div>
+        <details class="advanced-settings">
+          <summary>動きの詳細設定</summary>
+          <div class="control-grid details-grid">
+            <label class="control" for="loopCycles"><span>GIF内の繰り返し数</span><select id="loopCycles"><option value="1">1回</option><option value="2">2回</option><option value="3">3回</option><option value="4">4回</option></select></label>
+            <label class="check-control" for="reverse"><input id="reverse" type="checkbox"><span>動きを逆向きにする</span></label>
+          </div>
+          <p class="help-text">GIF保存時は指定した回数が時間内へ収まり、先頭と末尾がつながるように計算します。</p>
+        </details>
       </section>
 
       <section class="panel export-panel" aria-labelledby="export-title">
         <div class="section-heading"><div><p class="step">3</p><h2 id="export-title">保存設定</h2></div></div>
-        <div class="control-grid compact-grid">
-          <label class="control" for="outputSize"><span>出力サイズ</span><select id="outputSize"><option value="256">256×256 軽量</option><option value="360">360×360 標準</option><option value="480">480×480 高画質</option></select></label>
-          <label class="control" for="duration"><span>長さ</span><select id="duration"><option value="2">2秒</option><option value="3">3秒</option><option value="4">4秒</option><option value="5">5秒</option></select></label>
-          <label class="control" for="fps"><span>滑らかさ</span><select id="fps"><option value="8">8fps 軽量</option><option value="10">10fps 標準</option><option value="12">12fps 滑らか</option></select></label>
-          <label class="control" for="backgroundMode"><span>背景</span><select id="backgroundMode"><option value="transparent">透明</option><option value="white">白</option><option value="black">黒</option><option value="green">グリーンバック</option><option value="custom">好きな色</option></select></label>
-          <label class="control control-wide color-control" for="backgroundColor"><span>背景色</span><input id="backgroundColor" type="color" value="#ffffff"></label>
-        </div>
-        <p id="frameEstimate" class="estimate"></p>
-        <p class="help-text">GIFは最大256色です。透明部分の縁や細かなグラデーションはPNGより色が減る場合があります。</p>
-        <div class="primary-actions">
+        <label class="control ratio-control" for="canvasRatio"><span>画面比率</span><select id="canvasRatio"><option value="1:1">1対1 正方形</option><option value="4:5">4対5 縦長</option><option value="9:16">9対16 縦画面</option><option value="16:9">16対9 横画面</option></select></label>
+
+        <fieldset class="export-group">
+          <legend>GIFアニメーション</legend>
+          <div class="control-grid compact-grid">
+            <label class="control" for="gifSize"><span>長辺サイズ</span><select id="gifSize"><option value="256">256px 軽量</option><option value="360">360px 標準</option><option value="480">480px 高精細</option></select></label>
+            <label class="control" for="duration"><span>長さ</span><select id="duration"><option value="2">2秒</option><option value="3">3秒</option><option value="4">4秒</option><option value="5">5秒</option></select></label>
+            <label class="control" for="fps"><span>滑らかさ</span><select id="fps"><option value="8">8fps 軽量</option><option value="10">10fps 標準</option><option value="12">12fps 滑らか</option></select></label>
+            <label class="control" for="gifQuality"><span>色品質</span><select id="gifQuality"><option value="fast">軽量 固定色</option><option value="balanced">標準 適応色</option><option value="high">高画質 適応色と補間</option></select></label>
+          </div>
+          <p id="gifEstimate" class="estimate"></p>
+          <p class="help-text">高画質は色の分析を2段階で行うため時間がかかります。軽い端末では標準または軽量を使用してください。</p>
           <button id="exportGifButton" class="primary-button" type="button">GIFを保存</button>
-          <button id="exportPngButton" type="button">現在の画像をPNG保存</button>
-          <button id="cancelExportButton" class="danger-button" type="button" hidden>生成を中止</button>
-        </div>
-        <progress id="exportProgress" max="100" value="0" aria-label="GIF生成の進行状況">0%</progress>
+        </fieldset>
+
+        <fieldset class="export-group">
+          <legend>静止画像</legend>
+          <div class="control-grid compact-grid">
+            <label class="control" for="stillSize"><span>長辺サイズ</span><select id="stillSize"><option value="480">480px 軽量</option><option value="720">720px</option><option value="1080">1080px 標準</option><option value="1440">1440px 高精細</option></select></label>
+            <label class="control" for="stillFormat"><span>形式</span><select id="stillFormat"><option value="png">PNG 透明対応</option><option value="jpeg">JPEG 写真向け</option><option value="webp">WebP 軽量</option></select></label>
+            <label class="control control-wide" for="stillQuality"><span>JPEG、WebP画質 <output id="stillQualityValue" for="stillQuality"></output></span><input id="stillQuality" type="range" min="0.6" max="1" step="0.02"></label>
+          </div>
+          <p id="stillEstimate" class="estimate"></p>
+          <button id="exportStillButton" type="button">現在の画像を保存</button>
+        </fieldset>
+
+        <details class="advanced-settings">
+          <summary>背景設定</summary>
+          <div class="control-grid details-grid">
+            <label class="control" for="backgroundMode"><span>背景</span><select id="backgroundMode"><option value="transparent">透明</option><option value="white">白</option><option value="black">黒</option><option value="green">グリーンバック</option><option value="custom">好きな色</option></select></label>
+            <label class="control color-control" for="backgroundColor"><span>背景色</span><input id="backgroundColor" type="color" value="#ffffff"></label>
+          </div>
+          <p class="help-text">JPEGで透明背景を選んだ場合は白背景になります。GIFは最大256色です。</p>
+        </details>
+
+        <button id="cancelExportButton" class="danger-button cancel-button" type="button" hidden>生成を中止</button>
+        <progress id="exportProgress" max="100" value="0" aria-label="保存処理の進行状況">0%</progress>
         <p id="status" class="status" role="status" aria-live="polite">画像を選ぶと開始できます。</p>
       </section>
 
@@ -100,7 +140,7 @@
 
     <section class="panel guide-panel" aria-labelledby="guide-title">
       <h2 id="guide-title">軽い端末で失敗しにくい設定</h2>
-      <ol><li>最初は360×360、3秒、10fpsで保存します。</li><li>保存できない場合は256×256または8fpsへ下げます。</li><li>公開版をホーム画面へ追加すると、初回読み込み後はオフラインでも起動できます。</li></ol>
+      <ol><li>最初は360px、3秒、10fps、色品質は標準で保存します。</li><li>動作が重い場合は256px、8fps、色品質は軽量へ下げます。</li><li>作業後は画像を外すと、画像用のメモリを早めに解放できます。</li></ol>
     </section>
   </main>
 
