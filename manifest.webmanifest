@@ -1,10 +1,20 @@
 {
   "name": "画像モーションツール",
   "short_name": "画像モーション",
-  "description": "画像を端末内だけで動かしてGIFまたはPNGへ保存する無料ツール",
+  "description": "画像を端末内だけで動かし、GIFや静止画像として保存します。",
+  "lang": "ja",
+  "dir": "ltr",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f6f8fc",
-  "theme_color": "#f6f8fc"
+  "theme_color": "#f6f8fc",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
 }
