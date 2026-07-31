@@ -20,6 +20,7 @@
 - sw.jsへ追加するのは公開に必要な固定ファイルだけにする
 - 実行ファイルを変更したらindex.html、Worker、Service Workerの参照URLと画面のBuild番号を同じ変更で進める
 - Service Worker登録ではupdateViaCacheをnoneに保ち、画面HTMLはネットワーク優先にする
+- robots.txt、ai.txt、sitemap.xmlを変更した場合は、正規URLと公開範囲を確認し、利用者の端末内データへの許可と混同しない
 - 古い設定を壊さない場合は移行処理を残す
 - 使わなくなった設定や関数は同じ変更内で削除する
 - GIF圧縮を変更した場合は、ヘッダー確認だけで終えず、生成した全フレームをLZW復号して元データと比較する

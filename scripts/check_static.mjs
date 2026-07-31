@@ -4,7 +4,7 @@ import { constants } from 'node:fs';
 
 const requiredFiles = [
   'index.html', 'app.css', 'app-core.js', 'app.js', 'app-image.js', 'app-export.js', 'app-events.js', 'gif-encoder.js', 'gif-worker.js',
-  'sw.js', 'manifest.webmanifest', 'icon.svg', 'README.md', 'SECURITY.md', 'MAINTENANCE.md',
+  'sw.js', 'manifest.webmanifest', 'icon.svg', 'robots.txt', 'ai.txt', 'sitemap.xml', 'README.md', 'SECURITY.md', 'MAINTENANCE.md',
   'scripts/test_gif_disposal.mjs', 'scripts/test_gif_dominant_color.mjs',
 ];
 for (const file of requiredFiles) await access(new URL(`../${file}`, import.meta.url), constants.R_OK);
@@ -19,11 +19,21 @@ const app = [appMain, appImage, appExport, appEvents].join('\n');
 const encoder = await readFile(new URL('gif-encoder.js', root), 'utf8');
 const worker = await readFile(new URL('gif-worker.js', root), 'utf8');
 const sw = await readFile(new URL('sw.js', root), 'utf8');
+const robots = await readFile(new URL('robots.txt', root), 'utf8');
+const ai = await readFile(new URL('ai.txt', root), 'utf8');
+const sitemap = await readFile(new URL('sitemap.xml', root), 'utf8');
 const manifest = JSON.parse(await readFile(new URL('manifest.webmanifest', root), 'utf8'));
 
 assert.match(index, /Content-Security-Policy/);
 assert.match(index, /connect-src 'none'/);
 assert.match(index, /object-src 'none'/);
+assert.match(index, /Permissions-Policy/);
+assert.match(index, /href="ai\.txt"/);
+assert.match(robots, /User-agent:\s*\*/);
+assert.match(robots, /Sitemap:/);
+assert.match(ai, /MIT License/);
+assert.match(ai, /AI visits|AIの訪問/);
+assert.match(sitemap, /https:\/\/abcderp2\.github\.io\/image-motion-tool\//);
 assert.doesNotMatch(index, /<script[^>]+src="https?:\/\//i);
 assert.doesNotMatch(index, /<link[^>]+href="https?:\/\/[^\"]+\.css/i);
 assert.doesNotMatch(app, /\.innerHTML\s*=|eval\s*\(|new Function\s*\(/);

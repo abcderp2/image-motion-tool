@@ -9,6 +9,7 @@
 - 外部API、CDN、広告、アクセス解析を使用しない
 - Content Security Policyで通信先、スクリプト、画像、Workerを制限する
 - カメラ、マイク、位置情報などの端末APIを使用しない
+- HTMLのPermissions-Policyでも不要な端末APIを明示的に無効化する
 - PNG、JPEG、WebPの実ヘッダーを画像展開前に確認する
 - 容量、縦横、合計画素数、総描画量を制限する
 - SVG、HTML、不明な画像形式を読み込まない
@@ -20,9 +21,9 @@
 
 ## 静的ホスティング上の限界
 
-Content Security PolicyはHTMLのmeta要素で配信しています。meta要素ではframe-ancestorsが有効にならないため、アプリ側でも埋め込み表示を検出して操作を停止します。HTTPレスポンスヘッダーを自由に設定できるホスティングへ移行する場合は、Content-Security-Policyヘッダーのframe-ancestors 'none'、X-Content-Type-Options nosniff、不要な端末APIを無効化するPermissions-Policyを追加してください。
+Content Security PolicyとPermissions-PolicyはHTMLのmeta要素で方針を明示しています。meta要素ではframe-ancestorsが有効にならないため、アプリ側でも埋め込み表示を検出して操作を停止します。HTTPレスポンスヘッダーを自由に設定できるホスティングへ移行する場合は、Content-Security-Policyヘッダーのframe-ancestors 'none'、X-Content-Type-Options nosniff、不要な端末APIを無効化するPermissions-Policyを追加してください。
 
-端末内処理でも、壊れた画像や極端に大きい画像がブラウザの画像デコーダーへ負荷を与える可能性は残ります。そのため、ヘッダー確認と端末別上限を画像展開前に実施します。
+robots.txtとai.txtは公開方針であり、認証やアクセス制御ではありません。端末内処理でも、壊れた画像や極端に大きい画像がブラウザの画像デコーダーへ負荷を与える可能性は残ります。そのため、ヘッダー確認と端末別上限を画像展開前に実施します。
 
 ## 脆弱性の連絡
 
