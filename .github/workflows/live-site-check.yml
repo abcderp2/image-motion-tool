@@ -44,16 +44,16 @@ jobs:
           base = os.environ["SITE_URL"].rstrip("/") + "/"
           output_dir = pathlib.Path(os.environ["LIVE_TEST_DIR"])
           checks = (
-              (base, ("<title>画像モーションツール</title>", "Build 7", "app-core.js?v=3", "motion-model.js?v=7", "app.js?v=6", "保存したGIFを別タブで開く")),
+              (base, ("<title>画像モーションツール</title>", "Build 8", "app-core.js?v=4", "motion-model.js?v=7", "app.js?v=7", "動きの速さ", "GIF内の動作回数", "速度を変えて再生成", "保存したGIFを別タブで開く")),
               (base + "motion-model.js?v=7", ("case 'sway'", "pivotY = 0.96", "case 'pendulum'", "pivotY = 0.04", "case 'squash'", "pivotY = 0.92", "sampleLoopKeyframes")),
-              (base + "app.js?v=6", ("motionModel.motionAt", "setGifPreview", "URL.revokeObjectURL(gifPreviewObjectUrl)")),
-              (base + "app-image.js?v=2", ("inspectImageFile", "loadImageFile")),
-              (base + "app-export.js?v=6", ("exportGif", "setGifPreview(gifBlob)", "gif-worker.js?v=5", "dither: 'none'")),
-              (base + "app-events.js?v=6", ("serviceWorker", "sw.js?v=6", "clearGifPreview", "updateViaCache: 'none'")),
-              (base + "app-core.js?v=3", ("SETTINGS_VERSION", "validateImageMetadata", "squash")),
+              (base + "app.js?v=7", ("motionModel.motionAt", "setGifPreview", "lastGeneratedGifSettings", "regenerateGifButton", "URL.revokeObjectURL(gifPreviewObjectUrl)")),
+              (base + "app-image.js?v=3", ("inspectImageFile", "loadImageFile", "clearGifPreview")),
+              (base + "app-export.js?v=7", ("exportGif", "setGifPreview(gifBlob)", "gif-worker.js?v=5", "core.gifFrameDelay(settings)", "regenerateGifWithSpeed", "dither: 'none'")),
+              (base + "app-events.js?v=7", ("serviceWorker", "sw.js?v=8", "clearGifPreview", "updateViaCache: 'none'")),
+              (base + "app-core.js?v=4", ("SETTINGS_VERSION", "validateImageMetadata", "gifFrameDelay", "squash")),
               (base + "gif-encoder.js?v=5", ("GIF89a", "nextCode > (1 << codeSize)", "palette box must contain colors", "colors.length - 1")),
               (base + "gif-worker.js?v=5", ("gif-encoder.js?v=5", "encodeIndexedFrames")),
-              (base + "sw.js?v=6", ("ALLOWED_URLS", "NAVIGATION_URLS", "app-core.js?v=3", "motion-model.js?v=7", "image-motion-tool-v7")),
+              (base + "sw.js?v=8", ("ALLOWED_URLS", "NAVIGATION_URLS", "app-core.js?v=4", "motion-model.js?v=7", "app-image.js?v=3", "image-motion-tool-v8")),
               (base + "scripts/test_motion_model.mjs?v=7", ("motion model tests passed", "pivotY", "squash export loop")),
               (base + "scripts/test_gif_encoder.mjs?v=5", ("decodeGifFrames", "GIF encoder decode regression tests passed")),
               (base + "scripts/test_gif_disposal.mjs?v=5", ("transparent full frames must clear the previous frame", "GIF transparency disposal tests passed")),
@@ -74,7 +74,7 @@ jobs:
                   request = urllib.request.Request(
                       url,
                       headers={
-                          "User-Agent": "image-motion-tool-live-check/7.0",
+                          "User-Agent": "image-motion-tool-live-check/8.0",
                           "Cache-Control": "no-cache",
                       },
                   )
