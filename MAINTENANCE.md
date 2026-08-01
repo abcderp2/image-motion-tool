@@ -5,7 +5,7 @@
 ## 変更前
 
 1. mainが正常に公開されていることを確認する
-2. GitHub ActionsのChecksとDeploy GitHub Pagesが成功していることを確認する
+2. GitHub ActionsのChecks、Deploy GitHub Pages、Live site checkが成功していることを確認する
 3. 変更内容を1つの目的へ絞る
 4. mainを直接編集せず、新しいブランチを作る
 5. 大きな変更は画面、処理、テスト、文書の順に分ける
@@ -170,8 +170,8 @@ Pull Request本文には次を記載します。
 ## 公開後
 
 1. GitHub Pagesの公開完了を確認する
-2. Deploy GitHub Pagesが成功し、公開URLが表示できることを確認する
-3. 公開URLから対象Build番号と実行ファイル参照を確認し、必要に応じてgif-encoder.jsを取得してLZW復号、色再現、透明残像、支配色パレットを確認する
+2. Live site checkが公開中のBuild番号と実行ファイル参照を確認して成功したことを確認する
+3. Live site checkが公開中のgif-encoder.jsを取得し、LZW復号、色再現、透明残像、支配色パレットの各テストまで成功したことを確認する
 4. 公開URLを通常ウィンドウで開き、画面下部のBuild番号を確認する
 5. Service Worker更新後にページを再読み込みする
 6. 5つの代表的な動きを再生し、支点、伸縮、周期が名称と一致することを確認する
