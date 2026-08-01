@@ -45,9 +45,10 @@ assert.doesNotMatch(sw, /cache\.put\(/);
 assert.equal(manifest.start_url, './');
 assert.equal(manifest.scope, './');
 
-assert.match(index, /application-version" content="6"/);
-assert.match(index, /Build 6/);
-assert.match(index, /motion-model\.js\?v=6/);
+assert.match(index, /application-version" content="7"/);
+assert.match(index, /Build 7/);
+assert.match(index, /app-core\.js\?v=3/);
+assert.match(index, /motion-model\.js\?v=7/);
 assert.match(index, /app\.js\?v=6/);
 assert.match(index, /gif-encoder\.js\?v=5/);
 assert.match(index, /app-export\.js\?v=6/);
@@ -56,12 +57,12 @@ assert.match(appExport, /gif-worker\.js\?v=5/);
 assert.match(appEvents, /sw\.js\?v=6/);
 assert.match(appEvents, /updateViaCache: 'none'/);
 assert.match(worker, /gif-encoder\.js\?v=5/);
-assert.match(sw, /image-motion-tool-v6/);
+assert.match(sw, /image-motion-tool-v7/);
 assert.match(encoder, /transparent \? 0x09 : 0x04/);
 assert.match(encoder, /colors\.length - 1/);
 assert.match(encoder, /palette box must contain colors/);
 assert.doesNotMatch(appExport, /dither: 'error-diffusion'/);
-for (const asset of ['motion-model.js?v=6', 'app.js?v=6', 'app-export.js?v=6', 'app-events.js?v=6', 'gif-encoder.js?v=5', 'gif-worker.js?v=5']) {
+for (const asset of ['app-core.js?v=3', 'motion-model.js?v=7', 'app.js?v=6', 'app-export.js?v=6', 'app-events.js?v=6', 'gif-encoder.js?v=5', 'gif-worker.js?v=5']) {
   assert.ok(sw.includes(`'./${asset}'`), `sw.js is missing ${asset}`);
 }
 
@@ -69,6 +70,7 @@ assert.match(index, /value="sway">左右に傾く</);
 assert.match(index, /value="breathe">呼吸する</);
 assert.match(index, /value="zoom">ゆっくり拡大して戻る</);
 assert.match(index, /value="pendulum">振り子</);
+assert.match(index, /value="squash">伸縮</);
 assert.match(index, /保存したGIFを別タブで開く/);
 assert.match(index, /rel="noopener noreferrer"/);
 assert.match(appMain, /URL\.revokeObjectURL\(gifPreviewObjectUrl\)/);
@@ -76,6 +78,7 @@ assert.match(appExport, /setGifPreview\(gifBlob\)/);
 assert.match(motionModel, /case 'sway':[\s\S]*pivotY = 0\.96/);
 assert.match(motionModel, /case 'breathe':[\s\S]*scaleY = 1 \+ riseAndReturn/);
 assert.match(motionModel, /case 'pendulum':[\s\S]*pivotY = 0\.04/);
+assert.match(motionModel, /case 'squash':[\s\S]*pivotY = 0\.92/);
 
 const htmlIds = new Set([...index.matchAll(/\sid="([^"]+)"/g)].map((match) => match[1]));
 for (const match of app.matchAll(/querySelector\('#([^']+)'\)/g)) {

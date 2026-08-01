@@ -46,6 +46,7 @@ const migrated = core.sanitizeSettings({ outputSize: 480, preset: 'orbit', durat
 assert.equal(migrated.gifSize, 480);
 assert.equal(migrated.preset, 'orbit');
 assert.equal(migrated.settingsVersion, 2);
+assert.equal(core.sanitizeSettings({ preset: 'squash' }).preset, 'squash');
 
 const hostile = core.sanitizeSettings({
   preset: '<script>',
