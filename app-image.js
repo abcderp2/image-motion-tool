@@ -34,6 +34,8 @@ async function loadImageFile(file) {
   imageObjectUrl = objectUrl;
   image = candidate;
   imageMetadata = metadata;
+  lastGeneratedGifSettings = null;
+  clearGifPreview();
   settings.offsetX = 0;
   settings.offsetY = 0;
   lastCommittedSettings = { ...settings };
@@ -49,6 +51,8 @@ function clearImage() {
   imageObjectUrl = '';
   image = null;
   imageMetadata = null;
+  lastGeneratedGifSettings = null;
+  clearGifPreview();
   elements.imageInput.value = '';
   elements.removeImageButton.disabled = true;
   drawPreviewNow();
@@ -119,10 +123,28 @@ function canvasToBlob(canvas, type, quality) {
 function setExportUi(active) {
   exporting = active;
   elements.exportGifButton.disabled = active;
+  elements.regenerateGifButton.disabled = active;
   elements.exportStillButton.disabled = active;
   elements.imageInput.disabled = active;
+  elements.importSettingsInput.disabled = active;
+  for (const id of controlIds) elements[id].disabled = active;
+  for (const element of [
+    elements.centerButton,
+    elements.flipButton,
+    elements.removeImageButton,
+    elements.undoButton,
+    elements.redoButton,
+    elements.resetButton,
+    elements.exportSettingsButton,
+  ]) element.disabled = active;
   elements.cancelExportButton.hidden = !active;
-  if (!active) elements.progress.value = 0;
+  if (!active) {
+    elements.backgroundColor.disabled = settings.backgroundMode !== 'custom';
+    elements.stillQuality.disabled = settings.stillFormat === 'png';
+    elements.removeImageButton.disabled = !image;
+    updateHistoryButtons();
+    elements.progress.value = 0;
+  }
 }
 
 async function exportStill() {
