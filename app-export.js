@@ -198,6 +198,52 @@ async function regenerateGifWithSpeed() {
   await exportGif();
 }
 
+async function loadGifForRetiming(file) {
+  if (!(file instanceof File)) throw new Error('GIFファイルを選んでください。');
+  if (file.size < 14) throw new Error('GIFファイルが空か壊れています。');
+  if (file.size > core.LIMITS.maxFileBytes) throw new Error('GIFは15MB以下にしてください。');
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const info = gifRetimer.inspectGif(bytes);
+  setGifRetimeSource(bytes, info, file.name);
+  setStatus(`${info.width}×${info.height}px、${info.frames}フレームのGIFを読み込みました。フレーム画像は変更せず表示時間だけを変更できます。`);
+}
+
+function safeGifFileStem(fileName) {
+  const stem = String(fileName || 'image-motion').replace(/\.[^.]+$/, '');
+  const safe = stem.replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 64);
+  return safe || 'image-motion';
+}
+
+async function exportRetimedGif() {
+  if (!(gifRetimeBytes instanceof Uint8Array) || !gifRetimeInfo) {
+    setStatus('先に速度を変更するGIFを選んでください。');
+    return;
+  }
+  if (exporting) return;
+
+  exportCancelled = false;
+  setExportUi(true);
+  elements.progress.value = 15;
+  try {
+    await nextTask();
+    ensureNotCancelled();
+    const multiplier = gifRetimer.normalizeSpeedMultiplier(elements.gifRetimeMultiplier.value);
+    const encoded = gifRetimer.retimeGif(gifRetimeBytes, multiplier);
+    ensureNotCancelled();
+    elements.progress.value = 100;
+    const blob = new Blob([encoded], { type: 'image/gif' });
+    setRetimedGifPreview(blob);
+    const multiplierLabel = String(multiplier).replace('.', '_');
+    downloadBlob(blob, `${safeGifFileStem(gifRetimeFileName)}-speed-${multiplierLabel}x.gif`);
+    setStatus(`GIFを速度${multiplier}倍で保存しました。フレーム画像と元の透過・ループ情報は変更していません。`);
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') setStatus('GIFの速度変更を中止しました。');
+    else setStatus(error instanceof Error ? error.message : 'GIFの速度を変更できませんでした。');
+  } finally {
+    setExportUi(false);
+  }
+}
+
 function cancelExport() {
   exportCancelled = true;
   if (activeWorker) {
