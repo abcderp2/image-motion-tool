@@ -72,8 +72,8 @@
     const typeData = ascii(type);
     const paddedLength = data.length + (data.length & 1);
     const result = new Uint8Array(paddedLength + 8);
-    writeU32LE(result, 0, data.length);
-    result.set(typeData, 4);
+    result.set(typeData, 0);
+    writeU32LE(result, 4, data.length);
     result.set(data, 8);
     return result;
   }
@@ -93,9 +93,9 @@
     let offset = start;
     while (offset < end) {
       if (end - offset < 8) fail(`${context}のチャンクヘッダーが途中で終わっています。`);
-      if (!validFourCc(bytes, offset + 4)) fail(`${context}のチャンク名が不正です。`);
-      const type = readAscii(bytes, offset + 4);
-      const size = readU32LE(bytes, offset);
+      if (!validFourCc(bytes, offset)) fail(`${context}のチャンク名が不正です。`);
+      const type = readAscii(bytes, offset);
+      const size = readU32LE(bytes, offset + 4);
       const dataStart = offset + 8;
       if (size > end - dataStart) fail(`${context}のチャンク長が不正です。`);
       const dataEnd = dataStart + size;
