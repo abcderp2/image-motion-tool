@@ -17,11 +17,11 @@
 - 動きの名前、座標、伸縮、回転支点を変える場合はmotion-model.jsとscripts/test_motion_model.mjsを同時に更新する
 - 左右に傾くは足元、振り子は画像上部を支点とし、同じ回転に戻さない
 - 呼吸するは足元を保つ縦横伸縮、拡大は等倍から拡大して等倍へ戻る周期を保つ
-- 「動きの速さ」はプレビューとGIF、APNGの再生速度へ反映し、アニメーション内の動作回数は通常設定で指定できる状態を保つ
+- 「動きの速さ」はプレビューとGIF、APNG、アニメーションWebPの再生速度へ反映し、アニメーション内の動作回数は通常設定で指定できる状態を保つ
 - 速度変更再生成は最後に生成した設定を使い、現在の速度だけを差し替える。生成済みGIFの直接編集へ拡張しない
 - GIFの速度を変更する場合はフレーム間隔の計算を使い、GIFエンコーダーの形式や先頭・末尾の周期を変更しない
 - 生成済みGIFの速度変更はgif-retimer.jsで元のバイト列を保ち、各フレームの表示時間だけを書き換える。Canvas再描画や色変換を行わない
-- GIF、APNGまたは静止画像の生成中は設定、画像、履歴を変更できない状態にし、生成途中の設定と速度がずれないようにする
+- GIF、APNG、アニメーションWebPまたは静止画像の生成中は設定、画像、履歴を変更できない状態にし、生成途中の設定と速度がずれないようにする
 - 新しい入力は読み込み前の検査を追加する
 - 新しい出力は処理量とメモリ上限を追加する
 - app.jsで外部入力をHTMLとして挿入しない
@@ -42,6 +42,9 @@
 - APNGの生成前にフレーム数、表示時間、総処理画素数、推定出力サイズ、推定メモリを検査し、低メモリ端末では厳しい上限を使う
 - APNGの生成後はフレーム順序、表示時間、無限ループ、寸法、RGBA色、透過画素を復号検査する
 - APNGのチャンク組み立て処理へ外部ライブラリ、CDN、WebAssemblyを追加しない
+- アニメーションWebPはCanvas標準の非可逆WebPをフレームごとに検査し、RIFF、WEBP、VP8X、ANIM、ANMF、ALPH、VP8またはVP8Lの構造を確認する
+- アニメーションWebPの画質は初期95パーセントとし、可逆圧縮を実装したように表示しない。可逆WebPが必要になった場合は標準API以外の依存を追加する前に別PRでライセンスとサイズを確認する
+- アニメーションWebPの生成前にフレーム数、表示時間、総処理画素数、推定出力サイズ、推定メモリを検査する
 
 ## ローカル検査
 
@@ -52,6 +55,7 @@ node --check app-core.js
 node --check motion-model.js
 node --check gif-retimer.js
 node --check apng-encoder.js
+node --check webp-encoder.js
 node --check app.js
 node --check app-image.js
 node --check app-export.js
@@ -64,6 +68,7 @@ node scripts/test_motion_model.mjs
 node --max-old-space-size=64 scripts/test_gif_encoder.mjs
 node scripts/test_gif_retimer.mjs
 node scripts/test_apng_encoder.mjs
+node scripts/test_webp_encoder.mjs
 node scripts/test_gif_disposal.mjs
 node --max-old-space-size=64 scripts/test_gif_dominant_color.mjs
 node scripts/check_static.mjs
@@ -71,11 +76,13 @@ node scripts/check_static.mjs
 
 scripts/test_motion_model.mjsは、左右に傾くと振り子の支点が分離されていること、呼吸するの縦伸縮が横伸縮より大きいこと、拡大が先頭と末尾で等倍になること、伸縮が足元寄りを支点に横へ広がり縦へ縮むこと、逆向きでも周期が壊れないことを確認します。見た目だけで判定せず、支点と周期を数値で固定します。
 
-scripts/test_app_core.mjsは、動きの速さからGIFのフレーム間隔を計算し、速くすると再生時間が短く、遅くすると長くなること、表示する概算再生時間と実際のフレーム数・間隔の計算が一致することを確認します。
+scripts/test_app_core.mjsは、動きの速さからGIF、APNG、アニメーションWebPのフレーム間隔を計算し、速くすると再生時間が短く、遅くすると長くなること、表示する概算再生時間と実際のフレーム数・間隔の計算が一致することを確認します。
 
 scripts/test_gif_retimer.mjsは、速度変更前後のGIFを比較し、各フレームの表示時間以外のバイトが変わらないことを確認します。フレーム数、透過、ループ情報、表示時間の制御情報がないGIFの扱いも検査します。
 
 scripts/test_apng_encoder.mjsは、RGBAフレームをAPNGへ組み立て、チャンク構造、CRC、表示時間、無限ループ、寸法、フレーム順序、色、透過を確認します。壊れたCRC、チャンク長、フレーム寸法、総展開画素数が拒否されることも確認します。APNGは外部ライブラリを使わず、ブラウザ標準Canvas PNGの圧縮データを再利用します。
+
+scripts/test_webp_encoder.mjsは、VP8、VP8L、ALPHフレームをRIFFへ組み立て、RIFF長、WEBP、VP8X、ANIM、ANMF、フレーム順序、表示時間、無限ループ、寸法、透過、可逆ビットストリームの保持を確認します。壊れたRIFF長、チャンク長、寸法、表示時間、総展開画素数が拒否されることも確認します。実ピクセルのWebPデコードは追加ライブラリなしで行わず、保存ブラウザの標準デコーダーを手動確認します。
 
 scripts/test_gif_encoder.mjsは、小さな画像だけでなく、LZWのコード幅が9ビットから12ビットへ変化し、辞書が上限へ達する通常サイズのフレームを使用します。テストを軽くする目的で、この復号確認を削除しません。
 
@@ -131,6 +138,17 @@ APNGについては次も確認します。
 6. 480px、5秒、12fpsなど処理量が大きい設定が、生成開始前に拒否されることを確認する
 7. APNG生成中にキャンセルし、進行表示、操作ロック、Canvas、一時Blob、Object URLが解放されることを確認する
 8. APNGを連続生成し、前回の一時URLが破棄され、GIF生成と静止PNG、JPEG、WebP保存が回帰しないことを確認する
+
+アニメーションWebPについては次も確認します。
+
+1. 保存形式でアニメーションWebPを選び、GIF色品質が隠れ、WebP画質だけが表示されることを確認する
+2. WebPに対応したブラウザで360px、3秒、10fps、画質95パーセントを保存し、拡張子がwebpで、RIFF/WEBPヘッダーとANIM、ANMFがあることを確認する
+3. アニメーションWebPを別タブで表示し、色、透過、フレーム順序、動きの速さ、無限ループを確認する
+4. 画質を60パーセントと100パーセントへ変更し、完了メッセージと保存結果が一致することを確認する
+5. WebP非対応ブラウザで選択肢が無効になり、GIFまたはAPNGで保存できることを確認する
+6. 480px、5秒、12fpsなど処理量が大きい設定が、生成開始前に拒否されることを確認する
+7. アニメーションWebP生成中にキャンセルし、進行表示、操作ロック、Canvas、フレームBlob、Object URLが解放されることを確認する
+8. アニメーションWebPを連続生成し、前回の一時URLが破棄され、GIF、APNG、静止PNG、JPEG、WebP保存が回帰しないことを確認する
 
 GIFの不具合では、ファイルを開けるかだけで判断しません。破損したGIFでもブラウザがエラー補正して表示する場合があります。保存した画像の色、動き、全体の欠落、前フレームの残像がないことまで確認します。
 
