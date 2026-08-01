@@ -12,6 +12,11 @@
     maxPixelsDefault: 24_000_000,
     maxPixelsHighMemory: 32_000_000,
     maxGifRenderPixels: 14_000_000,
+    maxApngRenderPixels: 14_000_000,
+    maxApngOutputBytes: 32 * 1024 * 1024,
+    maxApngOutputBytesLowMemory: 16 * 1024 * 1024,
+    maxApngMemoryBytes: 64 * 1024 * 1024,
+    maxApngMemoryBytesLowMemory: 32 * 1024 * 1024,
     maxStillPixels: 4_000_000,
     maxSettingsBytes: 100_000,
     maxHistoryEntries: 30,
@@ -33,6 +38,7 @@
     duration: 3,
     fps: 10,
     gifQuality: 'balanced',
+    animationFormat: 'gif',
     stillSize: 1080,
     stillFormat: 'png',
     stillQuality: 0.9,
@@ -72,6 +78,7 @@
     const backgrounds = new Set(['transparent', 'white', 'black', 'green', 'custom']);
     const ratios = new Set(Object.keys(RATIO_MAP));
     const gifQualities = new Set(['fast', 'balanced', 'high']);
+    const animationFormats = new Set(['gif', 'apng']);
     const stillFormats = new Set(['png', 'jpeg', 'webp']);
 
     result.settingsVersion = SETTINGS_VERSION;
@@ -91,6 +98,7 @@
     result.duration = [2, 3, 4, 5].includes(Number(source.duration)) ? Number(source.duration) : DEFAULTS.duration;
     result.fps = [8, 10, 12].includes(Number(source.fps)) ? Number(source.fps) : DEFAULTS.fps;
     result.gifQuality = gifQualities.has(source.gifQuality) ? source.gifQuality : DEFAULTS.gifQuality;
+    result.animationFormat = animationFormats.has(source.animationFormat) ? source.animationFormat : DEFAULTS.animationFormat;
 
     result.stillSize = [480, 720, 1080, 1440].includes(Number(source.stillSize)) ? Number(source.stillSize) : DEFAULTS.stillSize;
     result.stillFormat = stillFormats.has(source.stillFormat) ? source.stillFormat : DEFAULTS.stillFormat;
@@ -149,6 +157,38 @@
       frameDelay,
       playbackSeconds: frames * frameDelay / 100,
       safe: renderPixels <= LIMITS.maxGifRenderPixels,
+    };
+  }
+
+  function estimateApng(settings, deviceMemory) {
+    const safe = sanitizeSettings(settings);
+    const dimensions = ratioDimensions(safe.gifSize, safe.canvasRatio);
+    const frames = safe.duration * safe.fps;
+    const framePixels = dimensions.width * dimensions.height;
+    const renderPixels = framePixels * frames;
+    const estimatedOutputBytes = renderPixels * 4 + frames * 1024;
+    const estimatedMemoryBytes = estimatedOutputBytes + framePixels * 8 + 4 * 1024 * 1024;
+    const memory = Number(deviceMemory);
+    const lowMemory = Number.isFinite(memory) && memory <= 2;
+    const maxRenderPixels = lowMemory ? 8_000_000 : LIMITS.maxApngRenderPixels;
+    const maxOutputBytes = lowMemory ? LIMITS.maxApngOutputBytesLowMemory : LIMITS.maxApngOutputBytes;
+    const maxMemoryBytes = lowMemory ? LIMITS.maxApngMemoryBytesLowMemory : LIMITS.maxApngMemoryBytes;
+    const frameDelay = gifFrameDelay(safe);
+    return {
+      ...dimensions,
+      frames,
+      renderPixels,
+      frameDelay,
+      playbackSeconds: frames * frameDelay / 100,
+      estimatedOutputBytes,
+      estimatedMemoryBytes,
+      maxRenderPixels,
+      maxOutputBytes,
+      maxMemoryBytes,
+      safe: Number.isSafeInteger(renderPixels)
+        && renderPixels <= maxRenderPixels
+        && estimatedOutputBytes <= maxOutputBytes
+        && estimatedMemoryBytes <= maxMemoryBytes,
     };
   }
 
@@ -303,6 +343,7 @@
     ratioDimensions,
     effectiveInputPixelLimit,
     estimateGif,
+    estimateApng,
     estimateStill,
     parseImageHeader,
     validateImageMetadata,
