@@ -68,7 +68,7 @@
   function sanitizeSettings(candidate) {
     const source = isPlainObject(candidate) ? candidate : {};
     const result = { ...DEFAULTS };
-    const presets = new Set(['float', 'bounce', 'shake', 'sway', 'orbit', 'breathe', 'zoom', 'pendulum']);
+    const presets = new Set(['float', 'bounce', 'shake', 'sway', 'orbit', 'breathe', 'zoom', 'pendulum', 'squash']);
     const backgrounds = new Set(['transparent', 'white', 'black', 'green', 'custom']);
     const ratios = new Set(Object.keys(RATIO_MAP));
     const gifQualities = new Set(['fast', 'balanced', 'high']);
