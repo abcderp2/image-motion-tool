@@ -31,6 +31,17 @@ elements.imageInput.addEventListener('change', async () => {
   }
 });
 
+elements.gifRetimeInput.addEventListener('change', async () => {
+  const file = elements.gifRetimeInput.files?.[0];
+  elements.gifRetimeInput.value = '';
+  if (!file) return;
+  try {
+    await loadGifForRetiming(file);
+  } catch (error) {
+    setStatus(error instanceof Error ? error.message : 'GIFを読み込めませんでした。');
+  }
+});
+
 elements.importSettingsInput.addEventListener('change', async () => {
   const file = elements.importSettingsInput.files?.[0];
   elements.importSettingsInput.value = '';
@@ -69,6 +80,7 @@ elements.redoButton.addEventListener('click', redo);
 elements.resetButton.addEventListener('click', resetSettings);
 elements.exportGifButton.addEventListener('click', exportGif);
 elements.regenerateGifButton.addEventListener('click', regenerateGifWithSpeed);
+elements.retimeGifButton.addEventListener('click', exportRetimedGif);
 elements.exportStillButton.addEventListener('click', exportStill);
 elements.cancelExportButton.addEventListener('click', cancelExport);
 elements.exportSettingsButton.addEventListener('click', exportSettings);
@@ -142,13 +154,14 @@ window.addEventListener('pagehide', () => {
   cancelAnimationFrame(animationFrame);
   if (imageObjectUrl) URL.revokeObjectURL(imageObjectUrl);
   clearGifPreview();
+  clearRetimedGifPreview();
   if (activeWorker) activeWorker.terminate();
 });
 
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   window.addEventListener('load', async () => {
     try {
-      const registration = await navigator.serviceWorker.register('sw.js?v=8', {
+      const registration = await navigator.serviceWorker.register('sw.js?v=9', {
         scope: './',
         updateViaCache: 'none',
       });
