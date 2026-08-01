@@ -17,6 +17,11 @@
     maxApngOutputBytesLowMemory: 16 * 1024 * 1024,
     maxApngMemoryBytes: 64 * 1024 * 1024,
     maxApngMemoryBytesLowMemory: 32 * 1024 * 1024,
+    maxWebpRenderPixels: 14_000_000,
+    maxWebpOutputBytes: 24 * 1024 * 1024,
+    maxWebpOutputBytesLowMemory: 12 * 1024 * 1024,
+    maxWebpMemoryBytes: 64 * 1024 * 1024,
+    maxWebpMemoryBytesLowMemory: 32 * 1024 * 1024,
     maxStillPixels: 4_000_000,
     maxSettingsBytes: 100_000,
     maxHistoryEntries: 30,
@@ -39,6 +44,7 @@
     fps: 10,
     gifQuality: 'balanced',
     animationFormat: 'gif',
+    webpQuality: 0.95,
     stillSize: 1080,
     stillFormat: 'png',
     stillQuality: 0.9,
@@ -78,7 +84,7 @@
     const backgrounds = new Set(['transparent', 'white', 'black', 'green', 'custom']);
     const ratios = new Set(Object.keys(RATIO_MAP));
     const gifQualities = new Set(['fast', 'balanced', 'high']);
-    const animationFormats = new Set(['gif', 'apng']);
+    const animationFormats = new Set(['gif', 'apng', 'webp']);
     const stillFormats = new Set(['png', 'jpeg', 'webp']);
 
     result.settingsVersion = SETTINGS_VERSION;
@@ -99,6 +105,7 @@
     result.fps = [8, 10, 12].includes(Number(source.fps)) ? Number(source.fps) : DEFAULTS.fps;
     result.gifQuality = gifQualities.has(source.gifQuality) ? source.gifQuality : DEFAULTS.gifQuality;
     result.animationFormat = animationFormats.has(source.animationFormat) ? source.animationFormat : DEFAULTS.animationFormat;
+    result.webpQuality = clamp(finiteNumber(source.webpQuality, DEFAULTS.webpQuality), 0.6, 1);
 
     result.stillSize = [480, 720, 1080, 1440].includes(Number(source.stillSize)) ? Number(source.stillSize) : DEFAULTS.stillSize;
     result.stillFormat = stillFormats.has(source.stillFormat) ? source.stillFormat : DEFAULTS.stillFormat;
@@ -173,6 +180,38 @@
     const maxRenderPixels = lowMemory ? 8_000_000 : LIMITS.maxApngRenderPixels;
     const maxOutputBytes = lowMemory ? LIMITS.maxApngOutputBytesLowMemory : LIMITS.maxApngOutputBytes;
     const maxMemoryBytes = lowMemory ? LIMITS.maxApngMemoryBytesLowMemory : LIMITS.maxApngMemoryBytes;
+    const frameDelay = gifFrameDelay(safe);
+    return {
+      ...dimensions,
+      frames,
+      renderPixels,
+      frameDelay,
+      playbackSeconds: frames * frameDelay / 100,
+      estimatedOutputBytes,
+      estimatedMemoryBytes,
+      maxRenderPixels,
+      maxOutputBytes,
+      maxMemoryBytes,
+      safe: Number.isSafeInteger(renderPixels)
+        && renderPixels <= maxRenderPixels
+        && estimatedOutputBytes <= maxOutputBytes
+        && estimatedMemoryBytes <= maxMemoryBytes,
+    };
+  }
+
+  function estimateWebp(settings, deviceMemory) {
+    const safe = sanitizeSettings(settings);
+    const dimensions = ratioDimensions(safe.gifSize, safe.canvasRatio);
+    const frames = safe.duration * safe.fps;
+    const framePixels = dimensions.width * dimensions.height;
+    const renderPixels = framePixels * frames;
+    const estimatedOutputBytes = renderPixels * 2 + frames * 2048;
+    const estimatedMemoryBytes = estimatedOutputBytes + framePixels * 8 + 4 * 1024 * 1024;
+    const memory = Number(deviceMemory);
+    const lowMemory = Number.isFinite(memory) && memory <= 2;
+    const maxRenderPixels = lowMemory ? 8_000_000 : LIMITS.maxWebpRenderPixels;
+    const maxOutputBytes = lowMemory ? LIMITS.maxWebpOutputBytesLowMemory : LIMITS.maxWebpOutputBytes;
+    const maxMemoryBytes = lowMemory ? LIMITS.maxWebpMemoryBytesLowMemory : LIMITS.maxWebpMemoryBytes;
     const frameDelay = gifFrameDelay(safe);
     return {
       ...dimensions,
@@ -344,6 +383,7 @@
     effectiveInputPixelLimit,
     estimateGif,
     estimateApng,
+    estimateWebp,
     estimateStill,
     parseImageHeader,
     validateImageMetadata,

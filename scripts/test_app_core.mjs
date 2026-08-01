@@ -48,6 +48,8 @@ assert.equal(migrated.preset, 'orbit');
 assert.equal(migrated.settingsVersion, 2);
 assert.equal(core.sanitizeSettings({ preset: 'squash' }).preset, 'squash');
 assert.equal(core.sanitizeSettings({ animationFormat: 'apng' }).animationFormat, 'apng');
+assert.equal(core.sanitizeSettings({ animationFormat: 'webp', webpQuality: 0.98 }).animationFormat, 'webp');
+assert.equal(core.sanitizeSettings({ webpQuality: 2 }).webpQuality, 1);
 assert.equal(core.sanitizeSettings({ animationFormat: 'webm' }).animationFormat, 'gif');
 
 const hostile = core.sanitizeSettings({
@@ -91,5 +93,11 @@ assert.equal(apngEstimate.frameDelay, 10);
 assert.ok(apngEstimate.estimatedMemoryBytes > apngEstimate.renderPixels);
 assert.equal(apngEstimate.safe, true);
 assert.equal(core.estimateApng({ ...core.DEFAULTS, gifSize: 480, duration: 5, fps: 12 }, 2).safe, false);
+
+const webpEstimate = core.estimateWebp({ ...core.DEFAULTS, gifSize: 360, duration: 3, fps: 10, webpQuality: 0.95 }, 4);
+assert.equal(webpEstimate.frames, 30);
+assert.equal(webpEstimate.frameDelay, 10);
+assert.equal(webpEstimate.safe, true);
+assert.equal(core.estimateWebp({ ...core.DEFAULTS, gifSize: 480, duration: 5, fps: 12 }, 2).safe, false);
 
 console.log('app-core tests passed');

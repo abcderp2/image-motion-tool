@@ -84,6 +84,26 @@ async function buildPngFrames(canvas, exportContext, prepared, estimate) {
   return frames;
 }
 
+async function buildWebpFrames(canvas, exportContext, prepared, estimate) {
+  const frames = [];
+  for (let index = 0; index < estimate.frames; index += 1) {
+    ensureNotCancelled();
+    drawFrame(exportContext, estimate.width, estimate.height, index / settings.fps, { source: prepared, forExport: true });
+    const blob = await canvasToBlob(canvas, 'image/webp', settings.webpQuality);
+    const bytes = new Uint8Array(await blob.arrayBuffer());
+    const info = window.ImageMotionWebp.inspectWebpFrame(bytes, { maxDimension: core.LIMITS.maxDimension });
+    if (info.width !== estimate.width || info.height !== estimate.height) {
+      throw new Error('アニメーションWebP用フレームの画像寸法が一致しません。');
+    }
+    frames.push(bytes);
+    elements.progress.value = Math.round(5 + ((index + 1) / estimate.frames) * 70);
+    setStatus(`アニメーションWebP用フレームを作成中 ${index + 1}/${estimate.frames}`);
+    if (index % 2 === 1) await nextTask();
+  }
+  ensureNotCancelled();
+  return frames;
+}
+
 function encodeWithWorker(frames, palette, estimate) {
   return new Promise((resolve, reject) => {
     let worker;
@@ -210,9 +230,87 @@ async function exportApng() {
   }
 }
 
+function webpBackgroundColor() {
+  const color = backgroundColor();
+  if (!color) return 0;
+  const match = /^#([0-9a-f]{6})$/i.exec(color);
+  if (!match) return 0;
+  const rgb = Number.parseInt(match[1], 16);
+  const red = (rgb >>> 16) & 0xff;
+  const green = (rgb >>> 8) & 0xff;
+  const blue = rgb & 0xff;
+  return (blue | (green << 8) | (red << 16) | (0xff << 24)) >>> 0;
+}
+
+async function exportAnimatedWebp() {
+  if (!image) {
+    setStatus('先に画像を選んでください。');
+    return;
+  }
+  if (exporting) return;
+  if (!supportsWebp) {
+    setStatus('このブラウザはWebP保存に対応していません。GIFまたはAPNGを選んでください。');
+    return;
+  }
+  const estimate = core.estimateWebp(settings, navigator.deviceMemory);
+  if (!estimate.safe) {
+    setStatus('アニメーションWebPの処理量、推定メモリ、または生成予定サイズが安全上限を超えています。サイズ、長さ、滑らかさを下げてください。');
+    return;
+  }
+  const webpApi = window.ImageMotionWebp;
+  if (!webpApi) {
+    setStatus('アニメーションWebP処理を読み込めませんでした。ページを更新して再試行してください。');
+    return;
+  }
+
+  exportCancelled = false;
+  setExportUi(true);
+  elements.progress.value = 0;
+  const canvas = document.createElement('canvas');
+  canvas.width = estimate.width;
+  canvas.height = estimate.height;
+  const exportContext = canvas.getContext('2d', { alpha: true });
+  let prepared = null;
+  let frames = null;
+  try {
+    prepared = prepareSourceForOutput(estimate.width, estimate.height);
+    frames = await buildWebpFrames(canvas, exportContext, prepared, estimate);
+    ensureNotCancelled();
+    elements.progress.value = 80;
+    setStatus('アニメーションWebPのRIFFチャンクを組み立てています。');
+    const encoded = webpApi.encodeAnimatedWebp(frames, {
+      durationMs: estimate.frameDelay * 10,
+      loopCount: 0,
+      backgroundColor: webpBackgroundColor(),
+      maxDimension: core.LIMITS.maxDimension,
+      maxTotalPixels: estimate.maxRenderPixels,
+      maxOutputBytes: estimate.maxOutputBytes,
+    });
+    ensureNotCancelled();
+    elements.progress.value = 100;
+    const blob = new Blob([encoded], { type: 'image/webp' });
+    lastGeneratedGifSettings = null;
+    setGifPreview(blob, 'webp');
+    downloadBlob(blob, `image-motion-${fileTimestamp()}.webp`);
+    setStatus(`アニメーションWebPを保存しました。${roundedDelayMessage(settings, estimate.frameDelay)}Canvas標準のWebP非可逆圧縮を使用しています。`);
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') setStatus('アニメーションWebP生成を中止しました。');
+    else setStatus(error instanceof Error ? error.message : 'アニメーションWebPを生成できませんでした。');
+  } finally {
+    frames = null;
+    if (prepared !== image) releaseCanvas(prepared);
+    releaseCanvas(canvas);
+    setExportUi(false);
+  }
+}
+
 async function exportGif() {
   if (settings.animationFormat === 'apng') {
     await exportApng();
+    return;
+  }
+  if (settings.animationFormat === 'webp') {
+    await exportAnimatedWebp();
     return;
   }
   if (!image) {
