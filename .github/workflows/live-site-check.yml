@@ -44,19 +44,19 @@ jobs:
           base = os.environ["SITE_URL"].rstrip("/") + "/"
           output_dir = pathlib.Path(os.environ["LIVE_TEST_DIR"])
           checks = (
-              (base, ("<title>画像モーションツール</title>", "Build 11", "app.css?v=3", "app-core.js?v=6", "motion-model.js?v=7", "gif-retimer.js?v=1", "apng-encoder.js?v=1", "webp-encoder.js?v=1", "app.js?v=10", "動きの速さ", "アニメーション内の動作回数", "保存形式", "WebP画質", "速度を変えて再生成", "生成済みGIFの速度変更", "保存したアニメーションを別タブで開く")),
+              (base, ("<title>画像モーションツール</title>", "Build 12", "app.css?v=3", "app-core.js?v=6", "motion-model.js?v=7", "gif-retimer.js?v=1", "apng-encoder.js?v=1", "webp-encoder.js?v=2", "app.js?v=10", "動きの速さ", "アニメーション内の動作回数", "保存形式", "WebP画質", "速度を変えて再生成", "生成済みGIFの速度変更", "保存したアニメーションを別タブで開く")),
               (base + "motion-model.js?v=7", ("case 'sway'", "pivotY = 0.96", "case 'pendulum'", "pivotY = 0.04", "case 'squash'", "pivotY = 0.92", "sampleLoopKeyframes")),
               (base + "gif-retimer.js?v=1", ("GIF87a", "inspectGif", "retimeGif", "delayOffset", "SPEED_MULTIPLIERS")),
               (base + "app.js?v=10", ("motionModel.motionAt", "setGifPreview", "lastGeneratedGifSettings", "regenerateGifButton", "ImageMotionGifRetimer", "retimedGifPreviewObjectUrl", "URL.revokeObjectURL(gifPreviewObjectUrl)", "estimateApng", "estimateWebp", "webpQuality")),
               (base + "app-image.js?v=5", ("inspectImageFile", "loadImageFile", "clearGifPreview")),
               (base + "app-export.js?v=10", ("exportGif", "exportApng", "exportAnimatedWebp", "setGifPreview(gifBlob, 'gif')", "ImageMotionApng", "ImageMotionWebp", "gif-worker.js?v=5", "core.gifFrameDelay(settings)", "regenerateGifWithSpeed", "loadGifForRetiming", "gifRetimer.retimeGif", "dither: 'none'")),
-              (base + "app-events.js?v=10", ("serviceWorker", "sw.js?v=11", "clearGifPreview", "gifRetimeInput", "retimeGifButton", "updateViaCache: 'none'")),
+              (base + "app-events.js?v=10", ("serviceWorker", "sw.js?v=12", "clearGifPreview", "gifRetimeInput", "retimeGifButton", "updateViaCache: 'none'")),
               (base + "app-core.js?v=6", ("SETTINGS_VERSION", "validateImageMetadata", "gifFrameDelay", "estimateApng", "estimateWebp", "squash")),
               (base + "apng-encoder.js?v=1", ("PNG_SIGNATURE", "acTL", "fcTL", "fdAT", "CRCが不正")),
-              (base + "webp-encoder.js?v=1", ("RIFF", "WEBP", "VP8X", "ANIM", "ANMF", "inspectAnimatedWebp")),
+              (base + "webp-encoder.js?v=2", ("RIFF", "WEBP", "VP8X", "ANIM", "ANMF", "inspectAnimatedWebp")),
               (base + "gif-encoder.js?v=5", ("GIF89a", "nextCode > (1 << codeSize)", "palette box must contain colors", "colors.length - 1")),
               (base + "gif-worker.js?v=5", ("gif-encoder.js?v=5", "encodeIndexedFrames")),
-              (base + "sw.js?v=11", ("ALLOWED_URLS", "NAVIGATION_URLS", "app.css?v=3", "app-core.js?v=6", "motion-model.js?v=7", "gif-retimer.js?v=1", "apng-encoder.js?v=1", "webp-encoder.js?v=1", "app.js?v=10", "app-image.js?v=5", "image-motion-tool-v11")),
+              (base + "sw.js?v=12", ("ALLOWED_URLS", "NAVIGATION_URLS", "app.css?v=3", "app-core.js?v=6", "motion-model.js?v=7", "gif-retimer.js?v=1", "apng-encoder.js?v=1", "webp-encoder.js?v=2", "app.js?v=10", "app-image.js?v=5", "image-motion-tool-v12")),
               (base + "scripts/test_motion_model.mjs?v=7", ("motion model tests passed", "pivotY", "squash export loop")),
               (base + "scripts/test_gif_encoder.mjs?v=5", ("decodeGifFrames", "GIF encoder decode regression tests passed")),
               (base + "scripts/test_gif_retimer.mjs?v=1", ("GIF retimer tests passed", "delayOffset", "loopCount")),
@@ -70,7 +70,7 @@ jobs:
               base + "scripts/test_motion_model.mjs?v=7": output_dir / "scripts" / "test_motion_model.mjs",
               base + "gif-retimer.js?v=1": output_dir / "gif-retimer.js",
               base + "apng-encoder.js?v=1": output_dir / "apng-encoder.js",
-              base + "webp-encoder.js?v=1": output_dir / "webp-encoder.js",
+              base + "webp-encoder.js?v=2": output_dir / "webp-encoder.js",
               base + "gif-encoder.js?v=5": output_dir / "gif-encoder.js",
               base + "scripts/test_gif_encoder.mjs?v=5": output_dir / "scripts" / "test_gif_encoder.mjs",
               base + "scripts/test_gif_retimer.mjs?v=1": output_dir / "scripts" / "test_gif_retimer.mjs",
@@ -86,7 +86,7 @@ jobs:
                   request = urllib.request.Request(
                       url,
                       headers={
-                          "User-Agent": "image-motion-tool-live-check/11.0",
+                          "User-Agent": "image-motion-tool-live-check/12.0",
                           "Cache-Control": "no-cache",
                       },
                   )
