@@ -49,13 +49,13 @@ assert.doesNotMatch(sw, /cache\.put\(/);
 assert.equal(manifest.start_url, './');
 assert.equal(manifest.scope, './');
 
-assert.match(index, /application-version" content="11"/);
-assert.match(index, /Build 11/);
+assert.match(index, /application-version" content="12"/);
+assert.match(index, /Build 12/);
 assert.match(index, /app-core\.js\?v=6/);
 assert.match(index, /motion-model\.js\?v=7/);
 assert.match(index, /gif-retimer\.js\?v=1/);
 assert.match(index, /apng-encoder\.js\?v=1/);
-assert.match(index, /webp-encoder\.js\?v=1/);
+assert.match(index, /webp-encoder\.js\?v=2/);
 assert.match(index, /app\.js\?v=10/);
 assert.match(index, /gif-encoder\.js\?v=5/);
 assert.match(index, /app-image\.js\?v=5/);
@@ -64,16 +64,16 @@ assert.match(index, /app-events\.js\?v=10/);
 assert.match(appExport, /gif-worker\.js\?v=5/);
 assert.match(appExport, /ImageMotionApng/);
 assert.match(appExport, /ImageMotionWebp/);
-assert.match(appEvents, /sw\.js\?v=11/);
+assert.match(appEvents, /sw\.js\?v=12/);
 assert.match(appEvents, /updateViaCache: 'none'/);
 assert.match(worker, /gif-encoder\.js\?v=5/);
-assert.match(sw, /image-motion-tool-v11/);
+assert.match(sw, /image-motion-tool-v12/);
 assert.match(encoder, /transparent \? 0x09 : 0x04/);
 assert.match(encoder, /colors\.length - 1/);
 assert.match(encoder, /palette box must contain colors/);
 assert.doesNotMatch(appExport, /dither: 'error-diffusion'/);
 assert.match(index, /app\.css\?v=3/);
-for (const asset of ['app.css?v=3', 'app-core.js?v=6', 'motion-model.js?v=7', 'gif-retimer.js?v=1', 'apng-encoder.js?v=1', 'webp-encoder.js?v=1', 'app.js?v=10', 'app-image.js?v=5', 'app-export.js?v=10', 'app-events.js?v=10', 'gif-encoder.js?v=5', 'gif-worker.js?v=5']) {
+for (const asset of ['app.css?v=3', 'app-core.js?v=6', 'motion-model.js?v=7', 'gif-retimer.js?v=1', 'apng-encoder.js?v=1', 'webp-encoder.js?v=2', 'app.js?v=10', 'app-image.js?v=5', 'app-export.js?v=10', 'app-events.js?v=10', 'gif-encoder.js?v=5', 'gif-worker.js?v=5']) {
   assert.ok(sw.includes(`'./${asset}'`), `sw.js is missing ${asset}`);
 }
 
