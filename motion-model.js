@@ -6,6 +6,30 @@
     return Number.isFinite(number) ? number : fallback;
   }
 
+  const SQUASH_KEYFRAMES = Object.freeze([
+    0,
+    0.3,
+    0.5,
+    0.8,
+    1,
+    0.8,
+    0.5,
+    0.3,
+    0,
+  ]);
+
+  function sampleLoopKeyframes(values, phase) {
+    const wrappedPhase = ((phase % 1) + 1) % 1;
+    const position = wrappedPhase * (values.length - 1);
+    const index = Math.min(values.length - 2, Math.floor(position));
+    const mix = position - index;
+
+    return (
+      values[index] +
+      (values[index + 1] - values[index]) * mix
+    );
+  }
+
   function motionAt(settings, seconds, forExport = false) {
     const safe = settings && typeof settings === 'object' ? settings : {};
     const direction = safe.reverse ? -1 : 1;
@@ -16,6 +40,11 @@
     const cycle = forExport
       ? (elapsed / duration) * loopCycles * Math.PI * 2 * direction
       : elapsed * speed * Math.PI * 2 * direction;
+    const squashPhase = cycle / (Math.PI * 2);
+    const squashAmount = sampleLoopKeyframes(
+      SQUASH_KEYFRAMES,
+      squashPhase,
+    );
     const amount = Math.max(0, finiteNumber(safe.amplitude, 18));
     const rotationAmount = Math.max(0, finiteNumber(safe.rotation, 4));
     const pulseAmount = Math.max(0, finiteNumber(safe.pulse, 4));
@@ -61,6 +90,36 @@
       case 'pendulum':
         rotation = wave * rotationAmount;
         pivotY = 0.04;
+        break;
+      case 'squash':
+        scaleX =
+          1 +
+          squashAmount *
+          pulseAmount /
+          100;
+
+        scaleY = Math.max(
+          0.72,
+          1 -
+            squashAmount *
+            pulseAmount /
+            120,
+        );
+
+        x =
+          -squashAmount *
+          amount *
+          0.45;
+
+        y =
+          squashAmount *
+          amount *
+          1.5;
+
+        rotation = 0;
+
+        pivotX = 0.5;
+        pivotY = 0.92;
         break;
       default:
         y = wave * amount;
