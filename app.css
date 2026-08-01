@@ -272,6 +272,17 @@ canvas:active {
   margin: 0.8rem 0;
 }
 
+.gif-retime-box {
+  border-top: 1px solid var(--border);
+  margin-top: 1rem;
+  padding-top: 1rem;
+}
+
+.subheading {
+  margin-bottom: 0.5rem;
+  font-weight: 800;
+}
+
 .estimate {
   min-height: 2.9em;
   margin: 0.75rem 0;
