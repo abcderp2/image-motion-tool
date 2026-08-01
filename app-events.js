@@ -68,6 +68,7 @@ elements.undoButton.addEventListener('click', undo);
 elements.redoButton.addEventListener('click', redo);
 elements.resetButton.addEventListener('click', resetSettings);
 elements.exportGifButton.addEventListener('click', exportGif);
+elements.regenerateGifButton.addEventListener('click', regenerateGifWithSpeed);
 elements.exportStillButton.addEventListener('click', exportStill);
 elements.cancelExportButton.addEventListener('click', cancelExport);
 elements.exportSettingsButton.addEventListener('click', exportSettings);
@@ -107,6 +108,7 @@ elements.canvas.addEventListener('pointerup', finishDragging);
 elements.canvas.addEventListener('pointercancel', finishDragging);
 
 elements.canvas.addEventListener('keydown', (event) => {
+  if (exporting) return;
   const movement = event.shiftKey ? 10 : 2;
   const delta = {
     ArrowLeft: [-movement, 0],
@@ -123,6 +125,7 @@ elements.canvas.addEventListener('keydown', (event) => {
 });
 
 document.addEventListener('keydown', (event) => {
+  if (exporting) return;
   if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
   if (event.key.toLowerCase() === 'z') {
     event.preventDefault();
@@ -145,7 +148,7 @@ window.addEventListener('pagehide', () => {
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   window.addEventListener('load', async () => {
     try {
-      const registration = await navigator.serviceWorker.register('sw.js?v=6', {
+      const registration = await navigator.serviceWorker.register('sw.js?v=8', {
         scope: './',
         updateViaCache: 'none',
       });

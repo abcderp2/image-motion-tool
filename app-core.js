@@ -107,6 +107,13 @@
     return JSON.stringify(sanitizeSettings(left)) === JSON.stringify(sanitizeSettings(right));
   }
 
+  function gifFrameDelay(settings) {
+    const safe = sanitizeSettings(settings);
+    const speedRatio = safe.speed / DEFAULTS.speed;
+    // GIFのdelayは100分の1秒単位。既定速度の再生時間を保ったまま速さを反映する。
+    return Math.max(1, Math.round(100 / (safe.fps * speedRatio)));
+  }
+
   function ratioDimensions(longEdge, ratioName) {
     const edge = Math.max(1, Math.round(Number(longEdge) || 1));
     const ratio = RATIO_MAP[ratioName] || RATIO_MAP['1:1'];
@@ -132,12 +139,15 @@
     const renderPixels = dimensions.width * dimensions.height * frames;
     const frameBytes = renderPixels;
     const palettePasses = safe.gifQuality === 'fast' ? 1 : 2;
+    const frameDelay = gifFrameDelay(safe);
     return {
       ...dimensions,
       frames,
       renderPixels,
       frameBytes,
       palettePasses,
+      frameDelay,
+      playbackSeconds: frames * frameDelay / 100,
       safe: renderPixels <= LIMITS.maxGifRenderPixels,
     };
   }
@@ -289,6 +299,7 @@
     isPlainObject,
     sanitizeSettings,
     settingsEqual,
+    gifFrameDelay,
     ratioDimensions,
     effectiveInputPixelLimit,
     estimateGif,

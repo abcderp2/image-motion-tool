@@ -95,7 +95,7 @@ function encodeWithWorker(frames, palette, estimate) {
     worker.postMessage({
       width: estimate.width,
       height: estimate.height,
-      delay: Math.max(1, Math.round(100 / settings.fps)),
+      delay: core.gifFrameDelay(settings),
       transparent: settings.backgroundMode === 'transparent',
       palette: palette.buffer,
       frames: buffers,
@@ -117,7 +117,7 @@ async function encodeGif(frames, palette, estimate) {
   return gifApi.encodeIndexedFrames({
     width: estimate.width,
     height: estimate.height,
-    delay: Math.max(1, Math.round(100 / settings.fps)),
+    delay: core.gifFrameDelay(settings),
     transparent: settings.backgroundMode === 'transparent',
     palette,
     frames,
@@ -157,6 +157,7 @@ async function exportGif() {
     ensureNotCancelled();
     elements.progress.value = 100;
     const gifBlob = new Blob([encoded], { type: 'image/gif' });
+    lastGeneratedGifSettings = core.sanitizeSettings(settings);
     setGifPreview(gifBlob);
     downloadBlob(gifBlob, `image-motion-${fileTimestamp()}.gif`);
     setStatus('GIFを保存しました。別タブで元のGIFを開き、拡大して確認できます。');
@@ -170,6 +171,31 @@ async function exportGif() {
     releaseCanvas(canvas);
     setExportUi(false);
   }
+}
+
+async function regenerateGifWithSpeed() {
+  if (!lastGeneratedGifSettings) {
+    setStatus('先にGIFを保存してください。');
+    return;
+  }
+  if (!image) {
+    setStatus('先に画像を選んでください。');
+    return;
+  }
+  if (exporting) return;
+
+  const currentSpeed = core.sanitizeSettings(settings).speed;
+  const previousSettings = { ...settings };
+  settings = core.sanitizeSettings({
+    ...lastGeneratedGifSettings,
+    speed: currentSpeed,
+  });
+  commitSettings(previousSettings);
+  applySettingsToControls();
+  resizePreview();
+  drawPreviewNow();
+  setStatus('最後に生成した設定を使い、速度だけを変えてGIFを再生成しています。');
+  await exportGif();
 }
 
 function cancelExport() {

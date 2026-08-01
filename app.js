@@ -28,6 +28,8 @@ const elements = {
   exportSettingsButton: document.querySelector('#exportSettingsButton'),
   openGifPreviewLink: document.querySelector('#openGifPreviewLink'),
   gifPreviewHelp: document.querySelector('#gifPreviewHelp'),
+  regenerateGifButton: document.querySelector('#regenerateGifButton'),
+  regenerateGifHelp: document.querySelector('#regenerateGifHelp'),
   progress: document.querySelector('#exportProgress'),
   status: document.querySelector('#status'),
   gifEstimate: document.querySelector('#gifEstimate'),
@@ -56,6 +58,7 @@ const outputs = {
 const context = elements.canvas.getContext('2d', { alpha: true, desynchronized: true });
 let settings = loadSettings();
 let lastCommittedSettings = { ...settings };
+let lastGeneratedGifSettings = null;
 let image = null;
 let imageMetadata = null;
 let imageObjectUrl = '';
@@ -119,6 +122,12 @@ function clearGifPreview() {
   elements.openGifPreviewLink.removeAttribute('href');
   elements.openGifPreviewLink.hidden = true;
   elements.gifPreviewHelp.hidden = true;
+  hideGifRegeneration();
+}
+
+function hideGifRegeneration() {
+  elements.regenerateGifButton.hidden = true;
+  elements.regenerateGifHelp.hidden = true;
 }
 
 function setGifPreview(blob) {
@@ -127,6 +136,8 @@ function setGifPreview(blob) {
   elements.openGifPreviewLink.href = gifPreviewObjectUrl;
   elements.openGifPreviewLink.hidden = false;
   elements.gifPreviewHelp.hidden = false;
+  elements.regenerateGifButton.hidden = !lastGeneratedGifSettings;
+  elements.regenerateGifHelp.hidden = !lastGeneratedGifSettings;
 }
 
 function applySettingsToControls() {
@@ -170,7 +181,7 @@ function updateOutputs() {
 function updateEstimates() {
   const gif = core.estimateGif(settings);
   const qualityText = { fast: '軽量', balanced: '標準', high: '高画質' }[settings.gifQuality];
-  elements.gifEstimate.textContent = `${gif.width}×${gif.height}px、${gif.frames}フレーム、色品質 ${qualityText}。${gif.safe ? '安全上限内です。' : '処理量が上限を超えています。'}`;
+  elements.gifEstimate.textContent = `${gif.width}×${gif.height}px、再生約${gif.playbackSeconds.toFixed(1)}秒、${gif.frames}フレーム、色品質 ${qualityText}。${gif.safe ? '安全上限内です。' : '処理量が上限を超えています。'}`;
   const still = core.estimateStill(settings);
   const formatText = settings.stillFormat === 'jpeg' ? 'JPEG' : settings.stillFormat.toUpperCase();
   elements.stillEstimate.textContent = `${still.width}×${still.height}px、${formatText}。${still.safe ? '安全上限内です。' : '処理量が上限を超えています。'}`;
