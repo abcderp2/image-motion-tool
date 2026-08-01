@@ -127,6 +127,9 @@ function setExportUi(active) {
   elements.exportStillButton.disabled = active;
   elements.imageInput.disabled = active;
   elements.importSettingsInput.disabled = active;
+  elements.gifRetimeInput.disabled = active;
+  elements.gifRetimeMultiplier.disabled = active;
+  elements.retimeGifButton.disabled = active;
   for (const id of controlIds) elements[id].disabled = active;
   for (const element of [
     elements.centerButton,
