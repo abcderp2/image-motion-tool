@@ -18,6 +18,12 @@ for (const id of controlIds) {
 if (!supportsWebp) {
   const webpOption = elements.stillFormat.querySelector('option[value="webp"]');
   if (webpOption) webpOption.disabled = true;
+  const animationWebpOption = elements.animationFormat.querySelector('option[value="webp"]');
+  if (animationWebpOption) animationWebpOption.disabled = true;
+  if (settings.animationFormat === 'webp') {
+    settings = core.sanitizeSettings({ ...settings, animationFormat: 'gif' });
+    saveSettings();
+  }
 }
 
 elements.imageInput.addEventListener('change', async () => {
@@ -161,7 +167,7 @@ window.addEventListener('pagehide', () => {
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   window.addEventListener('load', async () => {
     try {
-      const registration = await navigator.serviceWorker.register('sw.js?v=10', {
+      const registration = await navigator.serviceWorker.register('sw.js?v=11', {
         scope: './',
         updateViaCache: 'none',
       });
