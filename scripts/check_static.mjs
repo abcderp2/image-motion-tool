@@ -6,6 +6,7 @@ const requiredFiles = [
   'index.html', 'app.css', 'app-core.js', 'motion-model.js', 'gif-retimer.js', 'apng-encoder.js', 'webp-encoder.js', 'app.js', 'app-image.js', 'app-export.js', 'app-events.js', 'gif-encoder.js', 'gif-worker.js',
   'sw.js', 'manifest.webmanifest', 'icon.svg', 'robots.txt', 'ai.txt', 'sitemap.xml', 'README.md', 'SECURITY.md', 'MAINTENANCE.md',
   'scripts/test_app_core.mjs', 'scripts/test_motion_model.mjs', 'scripts/test_gif_encoder.mjs', 'scripts/test_gif_retimer.mjs', 'scripts/test_apng_encoder.mjs', 'scripts/test_webp_encoder.mjs', 'scripts/test_gif_disposal.mjs', 'scripts/test_gif_dominant_color.mjs',
+  '.github/workflows/pages.yml',
 ];
 for (const file of requiredFiles) await access(new URL(`../${file}`, import.meta.url), constants.R_OK);
 
@@ -28,6 +29,7 @@ const robots = await readFile(new URL('robots.txt', root), 'utf8');
 const ai = await readFile(new URL('ai.txt', root), 'utf8');
 const sitemap = await readFile(new URL('sitemap.xml', root), 'utf8');
 const manifest = JSON.parse(await readFile(new URL('manifest.webmanifest', root), 'utf8'));
+const pagesWorkflow = await readFile(new URL('.github/workflows/pages.yml', root), 'utf8');
 
 assert.match(index, /Content-Security-Policy/);
 assert.match(index, /connect-src 'none'/);
@@ -68,6 +70,12 @@ assert.match(appEvents, /sw\.js\?v=12/);
 assert.match(appEvents, /updateViaCache: 'none'/);
 assert.match(worker, /gif-encoder\.js\?v=5/);
 assert.match(sw, /image-motion-tool-v12/);
+assert.match(pagesWorkflow, /persist-credentials: false/);
+assert.match(pagesWorkflow, /actions\/setup-node@v5/);
+assert.match(pagesWorkflow, /node-version: 24/);
+assert.match(pagesWorkflow, /node --check app-core\.js/);
+assert.match(pagesWorkflow, /node scripts\/check_static\.mjs/);
+assert.match(pagesWorkflow, /permissions:\s+contents: read/);
 assert.match(encoder, /transparent \? 0x09 : 0x04/);
 assert.match(encoder, /colors\.length - 1/);
 assert.match(encoder, /palette box must contain colors/);
