@@ -8,7 +8,8 @@ if (window.top !== window.self) {
 const core = window.ImageMotionCore;
 const motionModel = window.ImageMotionModel;
 const gifApi = window.ImageMotionGif;
-if (!core || !motionModel || !gifApi) throw new Error('必要な処理ファイルを読み込めませんでした。');
+const gifRetimer = window.ImageMotionGifRetimer;
+if (!core || !motionModel || !gifApi || !gifRetimer) throw new Error('必要な処理ファイルを読み込めませんでした。');
 
 const elements = {
   imageInput: document.querySelector('#imageInput'),
@@ -30,6 +31,13 @@ const elements = {
   gifPreviewHelp: document.querySelector('#gifPreviewHelp'),
   regenerateGifButton: document.querySelector('#regenerateGifButton'),
   regenerateGifHelp: document.querySelector('#regenerateGifHelp'),
+  gifRetimeInput: document.querySelector('#gifRetimeInput'),
+  gifRetimeControls: document.querySelector('#gifRetimeControls'),
+  gifRetimeMultiplier: document.querySelector('#gifRetimeMultiplier'),
+  gifRetimeInfo: document.querySelector('#gifRetimeInfo'),
+  retimeGifButton: document.querySelector('#retimeGifButton'),
+  openRetimedGifPreviewLink: document.querySelector('#openRetimedGifPreviewLink'),
+  gifRetimePreviewHelp: document.querySelector('#gifRetimePreviewHelp'),
   progress: document.querySelector('#exportProgress'),
   status: document.querySelector('#status'),
   gifEstimate: document.querySelector('#gifEstimate'),
@@ -63,6 +71,10 @@ let image = null;
 let imageMetadata = null;
 let imageObjectUrl = '';
 let gifPreviewObjectUrl = '';
+let retimedGifPreviewObjectUrl = '';
+let gifRetimeBytes = null;
+let gifRetimeInfo = null;
+let gifRetimeFileName = '';
 let playing = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 let animationStart = performance.now();
 let animationFrame = 0;
@@ -138,6 +150,38 @@ function setGifPreview(blob) {
   elements.gifPreviewHelp.hidden = false;
   elements.regenerateGifButton.hidden = !lastGeneratedGifSettings;
   elements.regenerateGifHelp.hidden = !lastGeneratedGifSettings;
+}
+
+function clearRetimedGifPreview() {
+  if (retimedGifPreviewObjectUrl) URL.revokeObjectURL(retimedGifPreviewObjectUrl);
+  retimedGifPreviewObjectUrl = '';
+  elements.openRetimedGifPreviewLink.removeAttribute('href');
+  elements.openRetimedGifPreviewLink.hidden = true;
+  elements.gifRetimePreviewHelp.hidden = true;
+}
+
+function setGifRetimeSource(bytes, info, fileName) {
+  gifRetimeBytes = bytes;
+  gifRetimeInfo = info;
+  gifRetimeFileName = fileName;
+  clearRetimedGifPreview();
+  elements.gifRetimeMultiplier.value = '1';
+  elements.gifRetimeControls.hidden = false;
+  const loopText = info.loopCount === 0
+    ? '無限ループ'
+    : info.loopCount === null
+      ? 'ループ情報を保持'
+      : `${info.loopCount}回ループ`;
+  const transparencyText = info.hasTransparency ? '透過あり' : '透過なし';
+  elements.gifRetimeInfo.textContent = `${info.width}×${info.height}px、${info.frames}フレーム、${transparencyText}、${loopText}。速度倍率を選んで保存できます。`;
+}
+
+function setRetimedGifPreview(blob) {
+  clearRetimedGifPreview();
+  retimedGifPreviewObjectUrl = URL.createObjectURL(blob);
+  elements.openRetimedGifPreviewLink.href = retimedGifPreviewObjectUrl;
+  elements.openRetimedGifPreviewLink.hidden = false;
+  elements.gifRetimePreviewHelp.hidden = false;
 }
 
 function applySettingsToControls() {
