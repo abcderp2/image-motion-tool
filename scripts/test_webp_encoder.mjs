@@ -11,8 +11,8 @@ function ascii(value) {
 function chunk(type, data) {
   const result = new Uint8Array(8 + data.length + (data.length & 1));
   const view = new DataView(result.buffer);
-  view.setUint32(0, data.length, true);
-  result.set(ascii(type), 4);
+  result.set(ascii(type), 0);
+  view.setUint32(4, data.length, true);
   result.set(data, 8);
   return result;
 }
@@ -65,8 +65,8 @@ function parseTopChunks(bytes) {
   const result = [];
   let offset = 12;
   while (offset < bytes.length) {
-    const size = new DataView(bytes.buffer, bytes.byteOffset + offset).getUint32(0, true);
-    const type = String.fromCharCode(...bytes.subarray(offset + 4, offset + 8));
+    const type = String.fromCharCode(...bytes.subarray(offset, offset + 4));
+    const size = new DataView(bytes.buffer, bytes.byteOffset + offset + 4).getUint32(0, true);
     result.push({ type, data: bytes.slice(offset + 8, offset + 8 + size) });
     offset += 8 + size + (size & 1);
   }
@@ -109,8 +109,8 @@ for (const frame of topChunks.slice(2)) {
   assert.equal(frame.data[14], 0);
   assert.equal(frame.data[15], 0x03);
   const data = frame.data.slice(16);
-  assert.equal(String.fromCharCode(data[4], data[5], data[6], data[7]), 'ALPH');
-  assert.equal(String.fromCharCode(data[14], data[15], data[16], data[17]), 'VP8 ');
+  assert.equal(String.fromCharCode(data[0], data[1], data[2], data[3]), 'ALPH');
+  assert.equal(String.fromCharCode(data[10], data[11], data[12], data[13]), 'VP8 ');
 }
 const animatedInfo = webp.inspectAnimatedWebp(animated, { maxTotalPixels: 10 });
 assert.deepEqual({ width: animatedInfo.width, height: animatedInfo.height, frames: animatedInfo.frames, loopCount: animatedInfo.loopCount, hasAlpha: animatedInfo.hasAlpha, durations: animatedInfo.durations }, {
