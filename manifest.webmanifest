@@ -1,7 +1,7 @@
 {
   "name": "画像モーションツール",
   "short_name": "画像モーション",
-  "description": "画像を端末内だけで動かし、GIF、APNGや静止画像として保存します。",
+  "description": "画像を端末内だけで動かし、GIF、APNG、アニメーションWebPや静止画像として保存します。",
   "lang": "ja",
   "dir": "ltr",
   "start_url": "./",
