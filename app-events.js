@@ -167,7 +167,7 @@ window.addEventListener('pagehide', () => {
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   window.addEventListener('load', async () => {
     try {
-      const registration = await navigator.serviceWorker.register('sw.js?v=11', {
+      const registration = await navigator.serviceWorker.register('sw.js?v=12', {
         scope: './',
         updateViaCache: 'none',
       });
