@@ -144,6 +144,7 @@ function setExportUi(active) {
   if (!active) {
     elements.backgroundColor.disabled = settings.backgroundMode !== 'custom';
     elements.stillQuality.disabled = settings.stillFormat === 'png';
+    updateAnimationFormatUi();
     elements.removeImageButton.disabled = !image;
     updateHistoryButtons();
     elements.progress.value = 0;

@@ -64,6 +64,26 @@ async function buildIndexedFrames(exportContext, prepared, estimate, palette, qu
   return frames;
 }
 
+async function buildPngFrames(canvas, exportContext, prepared, estimate) {
+  const frames = [];
+  for (let index = 0; index < estimate.frames; index += 1) {
+    ensureNotCancelled();
+    drawFrame(exportContext, estimate.width, estimate.height, index / settings.fps, { source: prepared, forExport: true });
+    const blob = await canvasToBlob(canvas, 'image/png');
+    const bytes = new Uint8Array(await blob.arrayBuffer());
+    const info = window.ImageMotionApng.inspectPng(bytes, { maxDimension: core.LIMITS.maxDimension });
+    if (info.width !== estimate.width || info.height !== estimate.height) {
+      throw new Error('APNG用フレームの画像寸法が一致しません。');
+    }
+    frames.push(bytes);
+    elements.progress.value = Math.round(5 + ((index + 1) / estimate.frames) * 70);
+    setStatus(`APNG用フレームを作成中 ${index + 1}/${estimate.frames}`);
+    if (index % 2 === 1) await nextTask();
+  }
+  ensureNotCancelled();
+  return frames;
+}
+
 function encodeWithWorker(frames, palette, estimate) {
   return new Promise((resolve, reject) => {
     let worker;
@@ -124,7 +144,77 @@ async function encodeGif(frames, palette, estimate) {
   });
 }
 
+function roundedDelayMessage(settingsValue, delay) {
+  const safe = core.sanitizeSettings(settingsValue);
+  const exact = 100 / (safe.fps * (safe.speed / core.DEFAULTS.speed));
+  return Math.abs(exact - delay) > 1e-9
+    ? `フレーム間隔を${delay}百分の1秒へ安全に丸めました。`
+    : 'フレーム間隔は設定値どおりです。';
+}
+
+async function exportApng() {
+  if (!image) {
+    setStatus('先に画像を選んでください。');
+    return;
+  }
+  if (exporting) return;
+  const estimate = core.estimateApng(settings, navigator.deviceMemory);
+  if (!estimate.safe) {
+    setStatus('APNGの処理量、推定メモリ、または生成予定サイズが安全上限を超えています。サイズ、長さ、滑らかさを下げてください。');
+    return;
+  }
+  const apngApi = window.ImageMotionApng;
+  if (!apngApi) {
+    setStatus('APNG処理を読み込めませんでした。ページを更新して再試行してください。');
+    return;
+  }
+
+  exportCancelled = false;
+  setExportUi(true);
+  elements.progress.value = 0;
+  const canvas = document.createElement('canvas');
+  canvas.width = estimate.width;
+  canvas.height = estimate.height;
+  const exportContext = canvas.getContext('2d', { alpha: true });
+  let prepared = null;
+  let frames = null;
+  try {
+    prepared = prepareSourceForOutput(estimate.width, estimate.height);
+    frames = await buildPngFrames(canvas, exportContext, prepared, estimate);
+    ensureNotCancelled();
+    elements.progress.value = 80;
+    setStatus('APNGのチャンクを組み立てています。');
+    const encoded = apngApi.encodeApng(frames, {
+      delayNumerator: estimate.frameDelay,
+      delayDenominator: 100,
+      numPlays: 0,
+      maxDimension: core.LIMITS.maxDimension,
+      maxTotalPixels: estimate.maxRenderPixels,
+      maxOutputBytes: estimate.maxOutputBytes,
+    });
+    ensureNotCancelled();
+    elements.progress.value = 100;
+    const blob = new Blob([encoded], { type: 'image/apng' });
+    lastGeneratedGifSettings = null;
+    setGifPreview(blob, 'apng');
+    downloadBlob(blob, `image-motion-${fileTimestamp()}.png`);
+    setStatus(`APNGを保存しました。${roundedDelayMessage(settings, estimate.frameDelay)}表示できない環境では保存したPNGを利用できます。`);
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') setStatus('APNG生成を中止しました。');
+    else setStatus(error instanceof Error ? error.message : 'APNGを生成できませんでした。');
+  } finally {
+    frames = null;
+    if (prepared !== image) releaseCanvas(prepared);
+    releaseCanvas(canvas);
+    setExportUi(false);
+  }
+}
+
 async function exportGif() {
+  if (settings.animationFormat === 'apng') {
+    await exportApng();
+    return;
+  }
   if (!image) {
     setStatus('先に画像を選んでください。');
     return;
@@ -158,7 +248,7 @@ async function exportGif() {
     elements.progress.value = 100;
     const gifBlob = new Blob([encoded], { type: 'image/gif' });
     lastGeneratedGifSettings = core.sanitizeSettings(settings);
-    setGifPreview(gifBlob);
+    setGifPreview(gifBlob, 'gif');
     downloadBlob(gifBlob, `image-motion-${fileTimestamp()}.gif`);
     setStatus('GIFを保存しました。別タブで元のGIFを開き、拡大して確認できます。');
   } catch (error) {
@@ -189,6 +279,7 @@ async function regenerateGifWithSpeed() {
   settings = core.sanitizeSettings({
     ...lastGeneratedGifSettings,
     speed: currentSpeed,
+    animationFormat: 'gif',
   });
   commitSettings(previousSettings);
   applySettingsToControls();

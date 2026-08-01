@@ -49,7 +49,7 @@ const elements = {
 
 const controlIds = [
   'preset', 'amplitude', 'speed', 'rotation', 'pulse', 'zoom', 'reverse', 'loopCycles',
-  'canvasRatio', 'gifSize', 'duration', 'fps', 'gifQuality', 'stillSize', 'stillFormat',
+  'canvasRatio', 'animationFormat', 'gifSize', 'duration', 'fps', 'gifQuality', 'stillSize', 'stillFormat',
   'stillQuality', 'backgroundMode', 'backgroundColor',
 ];
 for (const id of controlIds) elements[id] = document.querySelector(`#${id}`);
@@ -71,6 +71,7 @@ let image = null;
 let imageMetadata = null;
 let imageObjectUrl = '';
 let gifPreviewObjectUrl = '';
+let gifPreviewFormat = 'gif';
 let retimedGifPreviewObjectUrl = '';
 let gifRetimeBytes = null;
 let gifRetimeInfo = null;
@@ -131,8 +132,10 @@ function setStatus(message) {
 function clearGifPreview() {
   if (gifPreviewObjectUrl) URL.revokeObjectURL(gifPreviewObjectUrl);
   gifPreviewObjectUrl = '';
+  gifPreviewFormat = 'gif';
   elements.openGifPreviewLink.removeAttribute('href');
   elements.openGifPreviewLink.hidden = true;
+  elements.openGifPreviewLink.textContent = '保存したアニメーションを別タブで開く';
   elements.gifPreviewHelp.hidden = true;
   hideGifRegeneration();
 }
@@ -142,14 +145,20 @@ function hideGifRegeneration() {
   elements.regenerateGifHelp.hidden = true;
 }
 
-function setGifPreview(blob) {
+function setGifPreview(blob, format = 'gif') {
   clearGifPreview();
   gifPreviewObjectUrl = URL.createObjectURL(blob);
+  gifPreviewFormat = format;
   elements.openGifPreviewLink.href = gifPreviewObjectUrl;
+  const formatLabel = format === 'apng' ? 'APNG' : 'GIF';
+  elements.openGifPreviewLink.textContent = `保存した${formatLabel}を別タブで開く`;
+  elements.gifPreviewHelp.textContent = format === 'apng'
+    ? '生成したAPNGそのものを別タブで表示します。APNGのアニメーション表示はブラウザにより異なるため、表示できない場合も保存ファイルは利用できます。一時URLは次の生成時またはページを閉じた時に破棄します。'
+    : '生成したGIFそのものを別タブで表示します。ブラウザのピンチ操作や拡大機能で確認できます。一時URLは次の生成時またはページを閉じた時に破棄します。';
   elements.openGifPreviewLink.hidden = false;
   elements.gifPreviewHelp.hidden = false;
-  elements.regenerateGifButton.hidden = !lastGeneratedGifSettings;
-  elements.regenerateGifHelp.hidden = !lastGeneratedGifSettings;
+  elements.regenerateGifButton.hidden = format !== 'gif' || !lastGeneratedGifSettings;
+  elements.regenerateGifHelp.hidden = format !== 'gif' || !lastGeneratedGifSettings;
 }
 
 function clearRetimedGifPreview() {
@@ -193,6 +202,7 @@ function applySettingsToControls() {
   }
   elements.backgroundColor.disabled = settings.backgroundMode !== 'custom';
   elements.stillQuality.disabled = settings.stillFormat === 'png';
+  updateAnimationFormatUi();
   elements.flipButton.setAttribute('aria-pressed', String(settings.flipped));
   updateOutputs();
   updateEstimates();
@@ -208,6 +218,7 @@ function readControls() {
   settings = core.sanitizeSettings(candidate);
   elements.backgroundColor.disabled = settings.backgroundMode !== 'custom';
   elements.stillQuality.disabled = settings.stillFormat === 'png';
+  updateAnimationFormatUi();
   updateOutputs();
   updateEstimates();
   saveSettings();
@@ -222,13 +233,29 @@ function updateOutputs() {
   outputs.stillQuality.value = `${Math.round(settings.stillQuality * 100)} %`;
 }
 
+function updateAnimationFormatUi() {
+  const isApng = settings.animationFormat === 'apng';
+  const qualityControl = elements.gifQuality?.closest('label');
+  if (qualityControl) qualityControl.hidden = isApng;
+  elements.exportGifButton.textContent = isApng ? 'APNGを保存' : 'GIFを保存';
+  const canRegenerate = !isApng && gifPreviewFormat === 'gif' && Boolean(lastGeneratedGifSettings);
+  elements.regenerateGifButton.hidden = !canRegenerate;
+  elements.regenerateGifHelp.hidden = !canRegenerate;
+}
+
 function updateEstimates() {
-  const gif = core.estimateGif(settings);
+  const animation = settings.animationFormat === 'apng'
+    ? core.estimateApng(settings, navigator.deviceMemory)
+    : core.estimateGif(settings);
+  const formatText = settings.animationFormat === 'apng' ? 'APNG' : 'GIF';
   const qualityText = { fast: '軽量', balanced: '標準', high: '高画質' }[settings.gifQuality];
-  elements.gifEstimate.textContent = `${gif.width}×${gif.height}px、再生約${gif.playbackSeconds.toFixed(1)}秒、${gif.frames}フレーム、色品質 ${qualityText}。${gif.safe ? '安全上限内です。' : '処理量が上限を超えています。'}`;
+  const detail = settings.animationFormat === 'apng'
+    ? `総処理画素 ${(animation.renderPixels / 1_000_000).toFixed(1)}MP、推定メモリ ${(animation.estimatedMemoryBytes / 1_048_576).toFixed(1)}MB`
+    : `色品質 ${qualityText}`;
+  elements.gifEstimate.textContent = `${formatText} ${animation.width}×${animation.height}px、再生約${animation.playbackSeconds.toFixed(1)}秒、${animation.frames}フレーム、${detail}。${animation.safe ? '安全上限内です。' : '処理量または推定メモリが上限を超えています。'}`;
   const still = core.estimateStill(settings);
-  const formatText = settings.stillFormat === 'jpeg' ? 'JPEG' : settings.stillFormat.toUpperCase();
-  elements.stillEstimate.textContent = `${still.width}×${still.height}px、${formatText}。${still.safe ? '安全上限内です。' : '処理量が上限を超えています。'}`;
+  const stillFormatText = settings.stillFormat === 'jpeg' ? 'JPEG' : settings.stillFormat.toUpperCase();
+  elements.stillEstimate.textContent = `${still.width}×${still.height}px、${stillFormatText}。${still.safe ? '安全上限内です。' : '処理量が上限を超えています。'}`;
 }
 
 function updateHistoryButtons() {
