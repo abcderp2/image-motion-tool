@@ -17,12 +17,41 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
         with:
           persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+
+      - name: Run automated checks
+        run: |
+          node --check app-core.js
+          node --check motion-model.js
+          node --check gif-retimer.js
+          node --check apng-encoder.js
+          node --check webp-encoder.js
+          node --check app.js
+          node --check app-image.js
+          node --check app-export.js
+          node --check app-events.js
+          node --check gif-encoder.js
+          node --check gif-worker.js
+          node --check sw.js
+          node scripts/test_app_core.mjs
+          node scripts/test_motion_model.mjs
+          node --max-old-space-size=64 scripts/test_gif_encoder.mjs
+          node scripts/test_gif_retimer.mjs
+          node scripts/test_apng_encoder.mjs
+          node scripts/test_webp_encoder.mjs
+          node scripts/test_gif_disposal.mjs
+          node --max-old-space-size=64 scripts/test_gif_dominant_color.mjs
+          node scripts/check_static.mjs
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v6
