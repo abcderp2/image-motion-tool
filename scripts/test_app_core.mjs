@@ -47,6 +47,8 @@ assert.equal(migrated.gifSize, 480);
 assert.equal(migrated.preset, 'orbit');
 assert.equal(migrated.settingsVersion, 2);
 assert.equal(core.sanitizeSettings({ preset: 'squash' }).preset, 'squash');
+assert.equal(core.sanitizeSettings({ animationFormat: 'apng' }).animationFormat, 'apng');
+assert.equal(core.sanitizeSettings({ animationFormat: 'webm' }).animationFormat, 'gif');
 
 const hostile = core.sanitizeSettings({
   preset: '<script>',
@@ -81,5 +83,13 @@ assert.ok(core.gifFrameDelay({ ...defaultGifSettings, speed: 0.2 }) > defaultDel
 assert.ok(core.gifFrameDelay({ ...defaultGifSettings, speed: 2 }) < defaultDelay);
 assert.equal(gifEstimate.frameDelay, core.gifFrameDelay({ ...core.DEFAULTS, canvasRatio: '9:16', gifSize: 480, duration: 5, fps: 12 }));
 assert.equal(gifEstimate.playbackSeconds, gifEstimate.frames * gifEstimate.frameDelay / 100);
+
+const apngEstimate = core.estimateApng({ ...core.DEFAULTS, gifSize: 360, duration: 3, fps: 10 }, 4);
+assert.equal(apngEstimate.frames, 30);
+assert.equal(apngEstimate.renderPixels, 3_888_000);
+assert.equal(apngEstimate.frameDelay, 10);
+assert.ok(apngEstimate.estimatedMemoryBytes > apngEstimate.renderPixels);
+assert.equal(apngEstimate.safe, true);
+assert.equal(core.estimateApng({ ...core.DEFAULTS, gifSize: 480, duration: 5, fps: 12 }, 2).safe, false);
 
 console.log('app-core tests passed');
