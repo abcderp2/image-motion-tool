@@ -49,7 +49,7 @@ const elements = {
 
 const controlIds = [
   'preset', 'amplitude', 'speed', 'rotation', 'pulse', 'zoom', 'reverse', 'loopCycles',
-  'canvasRatio', 'animationFormat', 'gifSize', 'duration', 'fps', 'gifQuality', 'stillSize', 'stillFormat',
+  'canvasRatio', 'animationFormat', 'gifSize', 'duration', 'fps', 'gifQuality', 'webpQuality', 'stillSize', 'stillFormat',
   'stillQuality', 'backgroundMode', 'backgroundColor',
 ];
 for (const id of controlIds) elements[id] = document.querySelector(`#${id}`);
@@ -61,6 +61,7 @@ const outputs = {
   pulse: document.querySelector('#pulseValue'),
   zoom: document.querySelector('#zoomValue'),
   stillQuality: document.querySelector('#stillQualityValue'),
+  webpQuality: document.querySelector('#webpQualityValue'),
 };
 
 const context = elements.canvas.getContext('2d', { alpha: true, desynchronized: true });
@@ -150,11 +151,13 @@ function setGifPreview(blob, format = 'gif') {
   gifPreviewObjectUrl = URL.createObjectURL(blob);
   gifPreviewFormat = format;
   elements.openGifPreviewLink.href = gifPreviewObjectUrl;
-  const formatLabel = format === 'apng' ? 'APNG' : 'GIF';
+  const formatLabel = format === 'apng' ? 'APNG' : format === 'webp' ? 'アニメーションWebP' : 'GIF';
   elements.openGifPreviewLink.textContent = `保存した${formatLabel}を別タブで開く`;
   elements.gifPreviewHelp.textContent = format === 'apng'
     ? '生成したAPNGそのものを別タブで表示します。APNGのアニメーション表示はブラウザにより異なるため、表示できない場合も保存ファイルは利用できます。一時URLは次の生成時またはページを閉じた時に破棄します。'
-    : '生成したGIFそのものを別タブで表示します。ブラウザのピンチ操作や拡大機能で確認できます。一時URLは次の生成時またはページを閉じた時に破棄します。';
+    : format === 'webp'
+      ? '生成したアニメーションWebPそのものを別タブで表示します。ブラウザの対応状況により表示できない場合も保存ファイルは利用できます。一時URLは次の生成時またはページを閉じた時に破棄します。'
+      : '生成したGIFそのものを別タブで表示します。ブラウザのピンチ操作や拡大機能で確認できます。一時URLは次の生成時またはページを閉じた時に破棄します。';
   elements.openGifPreviewLink.hidden = false;
   elements.gifPreviewHelp.hidden = false;
   elements.regenerateGifButton.hidden = format !== 'gif' || !lastGeneratedGifSettings;
@@ -231,14 +234,19 @@ function updateOutputs() {
   outputs.pulse.value = `${Math.round(settings.pulse)} %`;
   outputs.zoom.value = `${Math.round(settings.zoom)} %`;
   outputs.stillQuality.value = `${Math.round(settings.stillQuality * 100)} %`;
+  outputs.webpQuality.value = `${Math.round(settings.webpQuality * 100)} %`;
 }
 
 function updateAnimationFormatUi() {
+  const isGif = settings.animationFormat === 'gif';
   const isApng = settings.animationFormat === 'apng';
+  const isWebp = settings.animationFormat === 'webp';
   const qualityControl = elements.gifQuality?.closest('label');
-  if (qualityControl) qualityControl.hidden = isApng;
-  elements.exportGifButton.textContent = isApng ? 'APNGを保存' : 'GIFを保存';
-  const canRegenerate = !isApng && gifPreviewFormat === 'gif' && Boolean(lastGeneratedGifSettings);
+  const webpQualityControl = elements.webpQuality?.closest('label');
+  if (qualityControl) qualityControl.hidden = !isGif;
+  if (webpQualityControl) webpQualityControl.hidden = !isWebp;
+  elements.exportGifButton.textContent = isApng ? 'APNGを保存' : isWebp ? 'アニメーションWebPを保存' : 'GIFを保存';
+  const canRegenerate = isGif && gifPreviewFormat === 'gif' && Boolean(lastGeneratedGifSettings);
   elements.regenerateGifButton.hidden = !canRegenerate;
   elements.regenerateGifHelp.hidden = !canRegenerate;
 }
@@ -246,11 +254,15 @@ function updateAnimationFormatUi() {
 function updateEstimates() {
   const animation = settings.animationFormat === 'apng'
     ? core.estimateApng(settings, navigator.deviceMemory)
-    : core.estimateGif(settings);
-  const formatText = settings.animationFormat === 'apng' ? 'APNG' : 'GIF';
+    : settings.animationFormat === 'webp'
+      ? core.estimateWebp(settings, navigator.deviceMemory)
+      : core.estimateGif(settings);
+  const formatText = settings.animationFormat === 'apng' ? 'APNG' : settings.animationFormat === 'webp' ? 'アニメーションWebP' : 'GIF';
   const qualityText = { fast: '軽量', balanced: '標準', high: '高画質' }[settings.gifQuality];
   const detail = settings.animationFormat === 'apng'
     ? `総処理画素 ${(animation.renderPixels / 1_000_000).toFixed(1)}MP、推定メモリ ${(animation.estimatedMemoryBytes / 1_048_576).toFixed(1)}MB`
+    : settings.animationFormat === 'webp'
+      ? `画質 ${Math.round(settings.webpQuality * 100)}%、総処理画素 ${(animation.renderPixels / 1_000_000).toFixed(1)}MP、推定メモリ ${(animation.estimatedMemoryBytes / 1_048_576).toFixed(1)}MB`
     : `色品質 ${qualityText}`;
   elements.gifEstimate.textContent = `${formatText} ${animation.width}×${animation.height}px、再生約${animation.playbackSeconds.toFixed(1)}秒、${animation.frames}フレーム、${detail}。${animation.safe ? '安全上限内です。' : '処理量または推定メモリが上限を超えています。'}`;
   const still = core.estimateStill(settings);
