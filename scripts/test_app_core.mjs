@@ -74,4 +74,12 @@ assert.equal(gifEstimate.height, 480);
 assert.equal(gifEstimate.frames, 60);
 assert.equal(gifEstimate.safe, true);
 
+const defaultGifSettings = { ...core.DEFAULTS, fps: 10 };
+const defaultDelay = core.gifFrameDelay(defaultGifSettings);
+assert.equal(defaultDelay, 10);
+assert.ok(core.gifFrameDelay({ ...defaultGifSettings, speed: 0.2 }) > defaultDelay);
+assert.ok(core.gifFrameDelay({ ...defaultGifSettings, speed: 2 }) < defaultDelay);
+assert.equal(gifEstimate.frameDelay, core.gifFrameDelay({ ...core.DEFAULTS, canvasRatio: '9:16', gifSize: 480, duration: 5, fps: 12 }));
+assert.equal(gifEstimate.playbackSeconds, gifEstimate.frames * gifEstimate.frameDelay / 100);
+
 console.log('app-core tests passed');
