@@ -30,9 +30,9 @@
   <header class="site-header">
     <div class="page-width header-inner">
       <div>
-        <p class="eyebrow">無料、登録不要、端末内処理</p>
+        <p class="eyebrow">無料、登録不要、端末内で処理</p>
         <h1>画像モーションツール</h1>
-        <p class="lead">1枚の画像へ動きを付け、GIF、APNG、アニメーションWebPまたは静止画像として保存します。画像は端末外へ送信しません。</p>
+        <p class="lead">1枚の画像に動きを付け、GIF、APNG、アニメーションWebPまたは静止画像として保存できます。画像は端末外へ送信しません。</p>
       </div>
       <a class="back-link" href="https://github.com/abcderp2/image-motion-tool" target="_blank" rel="noopener noreferrer">GitHub</a>
     </div>
@@ -54,7 +54,7 @@
         <div class="canvas-shell">
           <canvas id="previewCanvas" width="360" height="360" tabindex="0" aria-label="アニメーションプレビュー。画像を指でドラッグできます。矢印キーでも位置を変更できます。"></canvas>
         </div>
-        <p class="help-text">PNG、JPEG、WebP、15MB以下。形式と寸法を読み込み前に確認します。画像を指でドラッグして位置を調整できます。</p>
+        <p class="help-text">PNG、JPEG、WebPに対応しています。15MB以下の画像だけを読み込み、形式と寸法を確認します。画像を指でドラッグして位置を調整できます。</p>
         <div class="button-row preview-actions">
           <button id="playButton" type="button" aria-pressed="false">一時停止</button>
           <button id="centerButton" type="button">中央へ戻す</button>
@@ -81,13 +81,13 @@
           <label class="control control-wide" for="zoom"><span>画像サイズ <output id="zoomValue" for="zoom"></output></span><input id="zoom" type="range" min="40" max="180" step="1"></label>
           <label class="control" for="loopCycles"><span>アニメーション内の動作回数</span><select id="loopCycles"><option value="1">1回</option><option value="2">2回</option><option value="3">3回</option><option value="4">4回</option></select></label>
         </div>
-        <p class="help-text">動きの速さはプレビューとアニメーションの再生速度へ反映されます。左右に傾くは足元、振り子は画像上部を支点にします。呼吸するは足元を保ったまま縦横へ伸縮し、ゆっくり拡大して戻るは等倍から拡大して元へ戻ります。伸縮は足元寄りを支点に横へ広がり、縦へ縮みながら少し沈んで元へ戻ります。</p>
+        <p class="help-text">動きの速さはプレビューとアニメーションの再生速度に反映されます。「左右に傾く」は足元を、「振り子」は画像上部を支点にします。「呼吸する」は足元を保ったまま縦横に伸縮し、「ゆっくり拡大して戻る」は等倍から拡大して元に戻ります。「伸縮」は足元寄りを支点に横に広がり、縦に縮みながら少し沈んで元に戻ります。</p>
         <details class="advanced-settings">
           <summary>動きの詳細設定</summary>
           <div class="control-grid details-grid">
             <label class="check-control" for="reverse"><input id="reverse" type="checkbox"><span>動きを逆向きにする</span></label>
           </div>
-          <p class="help-text">保存時は動きの速さを再生速度へ反映し、指定した動作回数と先頭と末尾がつながる周期を保ちます。</p>
+          <p class="help-text">保存時は、動きの速さを再生速度に反映します。指定した動作回数で、先頭と末尾がつながる周期を保ちます。</p>
         </details>
       </section>
 
@@ -106,14 +106,14 @@
             <label class="control" for="webpQuality"><span>WebP画質 <output id="webpQualityValue" for="webpQuality"></output></span><input id="webpQuality" type="range" min="0.6" max="1" step="0.02"></label>
           </div>
           <p id="gifEstimate" class="estimate"></p>
-          <p class="help-text">動きの速さを上げるとアニメーションの再生時間は短くなります。GIFの高画質は色分析を増やして粒状補間を使いません。APNGはフルカラーと透過を保ちます。アニメーションWebPはCanvas標準の非可逆WebPを指定画質で使います。軽い端末では小さいサイズ、短い長さ、低いfpsを使用してください。</p>
+          <p class="help-text">動きの速さを上げると、アニメーションの再生時間は短くなります。GIFの高画質では色を細かく分析し、細かな粒状の補正は使いません。APNGはフルカラーと透過を保ちます。アニメーションWebPはCanvas標準の非可逆WebPを指定画質で使います。性能が控えめな端末では、小さいサイズ、短い長さ、低いfpsから試してください。</p>
           <button id="exportGifButton" class="primary-button" type="button">GIFを保存</button>
           <div class="button-row history-actions">
             <a id="openGifPreviewLink" class="file-button secondary-file-button" target="_blank" rel="noopener noreferrer" aria-describedby="gifPreviewHelp" hidden>保存したアニメーションを別タブで開く</a>
             <button id="regenerateGifButton" class="secondary-button" type="button" hidden>速度を変えて再生成</button>
           </div>
-          <p id="gifPreviewHelp" class="help-text" hidden>生成したファイルそのものを別タブで表示します。APNGやアニメーションWebPの表示はブラウザにより異なるため、表示できない場合も保存ファイルは利用できます。一時URLは次の生成時またはページを閉じた時に破棄します。</p>
-          <p id="regenerateGifHelp" class="help-text" hidden>最後に生成した設定を使い、速度だけを現在の値へ差し替えて再生成します。生成済みGIFそのものは編集しません。</p>
+          <p id="gifPreviewHelp" class="help-text" hidden>生成したファイルそのものを別タブで表示します。APNGやアニメーションWebPはブラウザによって表示が異なるため、表示できない場合でも保存ファイルは利用できます。一時URLは次の生成時またはページを閉じた時に破棄します。</p>
+          <p id="regenerateGifHelp" class="help-text" hidden>最後に生成した設定を使い、現在の速度だけに変えて再生成します。生成済みGIFそのものは編集しません。</p>
           <div class="gif-retime-box">
             <p class="subheading">生成済みGIFの速度変更</p>
             <label class="file-button secondary-file-button" for="gifRetimeInput">生成済みGIFを選ぶ</label>
@@ -156,7 +156,7 @@
 
       <section class="panel settings-panel" aria-labelledby="settings-title">
         <div class="section-heading"><div><p class="step">4</p><h2 id="settings-title">設定の保存</h2></div></div>
-        <p>調整値だけをブラウザへ自動保存します。画像そのものは保存しません。設定JSONにも画像は入りません。</p>
+        <p>調整値だけをブラウザに自動保存します。画像そのものは保存せず、設定JSONにも含めません。</p>
         <div class="button-row">
           <button id="exportSettingsButton" type="button">設定JSONを保存</button>
           <label class="file-button secondary-file-button" for="importSettingsInput">設定JSONを読み込む</label>
@@ -166,12 +166,12 @@
     </div>
 
     <section class="panel guide-panel" aria-labelledby="guide-title">
-      <h2 id="guide-title">軽い端末で失敗しにくい設定</h2>
-      <ol><li>最初は360px、3秒、10fps、色品質は標準で保存します。</li><li>動作が重い場合は256px、8fps、色品質は軽量へ下げます。</li><li>作業後は画像を外すと、画像用のメモリを早めに解放できます。</li></ol>
+      <h2 id="guide-title">性能が控えめな端末で失敗しにくい設定</h2>
+      <ol><li>まずは360px、3秒、10fps、色品質は標準から試してください。</li><li>動作が重い場合は256px、8fps、色品質は軽量へ下げてください。</li><li>作業後に画像を外すと、画像用のメモリを解放しやすくなります。</li></ol>
     </section>
   </main>
 
-  <footer class="site-footer"><div class="page-width"><p>画像モーションツール Build 12</p><p>外部送信なし、外部ライブラリなし、追加課金なし</p><p>公開ページは検索エンジンとAIの訪問、利用者の指示による取得、要約、引用を歓迎します。<a href="ai.txt">AI向け公開方針</a></p></div></footer>
+  <footer class="site-footer"><div class="page-width"><p>画像モーションツール Build 12</p><p>外部送信なし、外部ライブラリなし、追加課金なし</p><p>検索エンジンやAIによる公開ページの訪問、利用者の指示による取得、要約、引用を歓迎します。<a href="ai.txt">AI向け公開方針</a></p></div></footer>
   <noscript><p class="noscript-message">このツールを使うにはJavaScriptを有効にしてください。</p></noscript>
 </body>
 </html>
