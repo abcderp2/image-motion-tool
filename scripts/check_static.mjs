@@ -93,7 +93,7 @@ assert.match(index, /value="squash">伸縮</);
 assert.doesNotMatch(index, /プレビュー速度/);
 assert.match(index, /動きの速さ/);
 assert.match(index, /アニメーション内の動作回数/);
-assert.match(index, /動きの速さはプレビューとアニメーションの再生速度へ反映/);
+assert.match(index, /動きの速さはプレビューとアニメーションの再生速度に反映/);
 assert.match(index, /速度を変えて再生成/);
 assert.match(index, /生成済みGIFそのものは編集しません/);
 assert.match(index, /gifRetimeInput/);
