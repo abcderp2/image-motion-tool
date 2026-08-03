@@ -43,6 +43,7 @@ async function loadImageFile(file) {
   saveSettings();
   elements.removeImageButton.disabled = false;
   elements.openPreviewButton.disabled = false;
+  setPlaying(true);
   drawPreviewNow();
   const typeLabel = metadata.type === 'image/jpeg' ? 'JPEG' : metadata.type.split('/')[1].toUpperCase();
   setStatus(`${candidate.naturalWidth}×${candidate.naturalHeight}pxの${typeLabel}を読み込みました。保存画像から位置情報などのメタデータは引き継ぎません。`);
@@ -142,7 +143,7 @@ function setExportUi(active) {
     elements.undoButton,
     elements.redoButton,
     elements.resetButton,
-    elements.presetButton,
+    ...presetItems,
     elements.openPreviewButton,
     elements.exportSettingsButton,
   ]) element.disabled = active;
@@ -153,6 +154,7 @@ function setExportUi(active) {
     updateAnimationFormatUi();
     elements.removeImageButton.disabled = !image;
     elements.openPreviewButton.disabled = !image;
+    for (const item of presetItems) item.disabled = false;
     updateHistoryButtons();
     elements.progress.value = 0;
   }
