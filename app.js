@@ -41,6 +41,7 @@ const elements = {
   playButton: document.querySelector('#playButton'),
   openPreviewButton: document.querySelector('#openPreviewButton'),
   presetButton: document.querySelector('#presetButton'),
+  presetList: document.querySelector('#presetList'),
   centerButton: document.querySelector('#centerButton'),
   flipButton: document.querySelector('#flipButton'),
   removeImageButton: document.querySelector('#removeImageButton'),
@@ -87,6 +88,8 @@ const outputs = {
   stillQuality: document.querySelector('#stillQualityValue'),
   webpQuality: document.querySelector('#webpQualityValue'),
 };
+
+const presetItems = [...elements.presetList.querySelectorAll('.preset-option')];
 
 const context = elements.canvas.getContext('2d', { alpha: true, desynchronized: true });
 let settings = loadSettings();
@@ -306,10 +309,21 @@ function setRetimedGifPreview(blob) {
   elements.gifRetimePreviewHelp.hidden = false;
 }
 
-function applySettingsToControls() {
+function updatePresetUi() {
   const currentPresetLabel = presetLabel(settings.preset);
   elements.presetButton.textContent = currentPresetLabel;
   elements.presetButton.setAttribute('aria-label', `動きの種類を切り替える。現在は${currentPresetLabel}です。次の動きへ切り替えます。`);
+  elements.presetList.setAttribute('aria-label', `動きの種類の切り替え順。現在は${currentPresetLabel}です。`);
+  for (const item of presetItems) {
+    const isCurrent = item.dataset.presetValue === settings.preset;
+    item.dataset.current = String(isCurrent);
+    if (isCurrent) item.setAttribute('aria-current', 'true');
+    else item.removeAttribute('aria-current');
+  }
+}
+
+function applySettingsToControls() {
+  updatePresetUi();
   for (const id of controlIds) {
     const element = elements[id];
     if (!element) continue;
