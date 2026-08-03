@@ -7,9 +7,11 @@
   const message = document.querySelector('#previewMessage');
 
   function showMessage(text) {
-    canvas.hidden = true;
-    message.hidden = false;
-    message.textContent = text;
+    if (canvas) canvas.hidden = true;
+    if (message) {
+      message.hidden = false;
+      message.textContent = text;
+    }
   }
 
   if (!core || !motionModel || !canvas || !message) {
@@ -17,9 +19,8 @@
     return;
   }
 
-  const query = new URLSearchParams(window.location.search);
-  const sourceUrl = query.get('source') || '';
-  const serializedSettings = query.get('settings') || '';
+  const sourceUrl = canvas.dataset.source || '';
+  const serializedSettings = canvas.dataset.settings || '';
   if (!sourceUrl.startsWith('blob:') || sourceUrl.length > 2048 || serializedSettings.length > 8192) {
     showMessage('プレビューの入力を確認できませんでした。');
     return;

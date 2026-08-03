@@ -235,6 +235,8 @@ function createLivePreviewUrl(sourceUrl) {
   }
 
   const safeSettings = core.sanitizeSettings(settings);
+  const safeSourceUrl = escapeHtmlAttribute(sourceUrl);
+  const safeSerializedSettings = escapeHtmlAttribute(JSON.stringify(safeSettings));
   const pageObjectUrl = URL.createObjectURL(new Blob([`<!doctype html>
 <html lang="ja">
 <head>
@@ -287,28 +289,15 @@ function createLivePreviewUrl(sourceUrl) {
 </head>
 <body>
   <main class="preview-stage">
-    <canvas id="previewCanvas" aria-label="現在の動くプレビュー"></canvas>
+    <canvas id="previewCanvas" data-source="${safeSourceUrl}" data-settings="${safeSerializedSettings}" aria-label="現在の動くプレビュー"></canvas>
     <p id="previewMessage" class="preview-message" hidden></p>
   </main>
   <script src="${escapeHtmlAttribute(new URL('app-core.js?v=6', window.location.href).href)}" defer></script>
   <script src="${escapeHtmlAttribute(new URL('motion-model.js?v=7', window.location.href).href)}" defer></script>
-  <script src="${escapeHtmlAttribute(new URL('preview-page.js?v=1', window.location.href).href)}" defer></script>
+  <script src="${escapeHtmlAttribute(new URL('preview-page.js?v=2', window.location.href).href)}" defer></script>
 </body>
 </html>`], { type: 'text/html' }));
-
-  try {
-    const query = new URLSearchParams({
-      source: sourceUrl,
-      settings: JSON.stringify(safeSettings),
-    });
-    return {
-      pageObjectUrl,
-      previewUrl: `${pageObjectUrl}?${query.toString()}`,
-    };
-  } catch (error) {
-    URL.revokeObjectURL(pageObjectUrl);
-    throw error;
-  }
+  return { pageObjectUrl, previewUrl: pageObjectUrl };
 }
 
 function clearGifPreview() {
