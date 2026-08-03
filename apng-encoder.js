@@ -227,7 +227,8 @@
         sawAnimationControl = true;
       } else if (type === 'fcTL') {
         if (!sawAnimationControl || sawIend || length !== 26) fail('fcTLの位置または長さが不正です。');
-        if (frames.length === 0 ? sawFirstFrameData : !sawFirstFrameData) fail('fcTLの順序が不正です。');
+        if (frames.length === 0 && sawFirstFrameData) fail('fcTLの順序が不正です。');
+        if (frames.length > 0 && !sawFirstFrameData) fail('fcTLの順序が不正です。');
         if (currentFrame && currentFrame.dataChunks === 0) fail('フレーム画像データがありません。');
         if (frames.length >= declaredFrameCount) fail('fcTLの数が多すぎます。');
         if (readU32(data, 0) !== expectedSequence) fail('APNGのフレーム順序が不正です。');
@@ -317,8 +318,7 @@
     writeU32(data, 16, 0);
     writeU16(data, 20, delayNumerator);
     writeU16(data, 22, delayDenominator);
-    // Every frame replaces the full canvas. Keeping the completed frame avoids
-    // requiring decoders to clear an intermediate canvas before the next frame.
+    // 全フレームを全画面へ上書きするため、前フレームの消去を再生側へ要求しない。
     data[24] = APNG_DISPOSE_OP_NONE;
     data[25] = APNG_BLEND_OP_SOURCE;
     return data;
