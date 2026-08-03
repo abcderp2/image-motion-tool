@@ -4,7 +4,7 @@ import { constants } from 'node:fs';
 
 const requiredFiles = [
   'index.html', 'app.css', 'app-core.js', 'motion-model.js', 'gif-retimer.js', 'apng-encoder.js', 'webp-encoder.js', 'app.js', 'app-image.js', 'app-export.js', 'app-events.js', 'gif-encoder.js', 'gif-worker.js',
-  'sw.js', 'preview-page.js', 'manifest.webmanifest', 'icon.svg', 'robots.txt', 'ai.txt', 'sitemap.xml', 'README.md', 'SECURITY.md', 'MAINTENANCE.md',
+  'sw.js', 'preview-page.js', 'preview-page.css', 'manifest.webmanifest', 'icon.svg', 'robots.txt', 'ai.txt', 'sitemap.xml', 'README.md', 'SECURITY.md', 'MAINTENANCE.md',
   'scripts/test_app_core.mjs', 'scripts/test_motion_model.mjs', 'scripts/test_gif_encoder.mjs', 'scripts/test_gif_retimer.mjs', 'scripts/test_apng_encoder.mjs', 'scripts/test_webp_encoder.mjs', 'scripts/test_gif_disposal.mjs', 'scripts/test_gif_dominant_color.mjs',
   '.github/workflows/pages.yml',
 ];
@@ -22,6 +22,7 @@ const appImage = await readFile(new URL('app-image.js', root), 'utf8');
 const appExport = await readFile(new URL('app-export.js', root), 'utf8');
 const appEvents = await readFile(new URL('app-events.js', root), 'utf8');
 const previewPage = await readFile(new URL('preview-page.js', root), 'utf8');
+const previewPageCss = await readFile(new URL('preview-page.css', root), 'utf8');
 const app = [motionModel, gifRetimer, apngEncoder, webpEncoder, appMain, appImage, appExport, appEvents].join('\n');
 const encoder = await readFile(new URL('gif-encoder.js', root), 'utf8');
 const worker = await readFile(new URL('gif-worker.js', root), 'utf8');
@@ -52,25 +53,25 @@ assert.doesNotMatch(sw, /cache\.put\(/);
 assert.equal(manifest.start_url, './');
 assert.equal(manifest.scope, './');
 
-assert.match(index, /application-version" content="18"/);
-assert.match(index, /Build 18/);
+assert.match(index, /application-version" content="19"/);
+assert.match(index, /Build 19/);
 assert.match(index, /app-core\.js\?v=6/);
 assert.match(index, /motion-model\.js\?v=7/);
 assert.match(index, /gif-retimer\.js\?v=1/);
 assert.match(index, /apng-encoder\.js\?v=1/);
 assert.match(index, /webp-encoder\.js\?v=2/);
-assert.match(index, /app\.js\?v=16/);
+assert.match(index, /app\.js\?v=17/);
 assert.match(index, /gif-encoder\.js\?v=5/);
 assert.match(index, /app-image\.js\?v=5/);
 assert.match(index, /app-export\.js\?v=10/);
-assert.match(index, /app-events\.js\?v=15/);
+assert.match(index, /app-events\.js\?v=16/);
 assert.match(appExport, /gif-worker\.js\?v=5/);
 assert.match(appExport, /ImageMotionApng/);
 assert.match(appExport, /ImageMotionWebp/);
-assert.match(appEvents, /sw\.js\?v=18/);
+assert.match(appEvents, /sw\.js\?v=19/);
 assert.match(appEvents, /updateViaCache: 'none'/);
 assert.match(worker, /gif-encoder\.js\?v=5/);
-assert.match(sw, /image-motion-tool-v18/);
+assert.match(sw, /image-motion-tool-v19/);
 assert.match(pagesWorkflow, /persist-credentials: false/);
 assert.match(pagesWorkflow, /actions\/setup-node@v5/);
 assert.match(pagesWorkflow, /node-version: 24/);
@@ -82,7 +83,7 @@ assert.match(encoder, /colors\.length - 1/);
 assert.match(encoder, /palette box must contain colors/);
 assert.doesNotMatch(appExport, /dither: 'error-diffusion'/);
 assert.match(index, /app\.css\?v=6/);
-for (const asset of ['app.css?v=6', 'app-core.js?v=6', 'motion-model.js?v=7', 'gif-retimer.js?v=1', 'apng-encoder.js?v=1', 'webp-encoder.js?v=2', 'app.js?v=16', 'app-image.js?v=5', 'app-export.js?v=10', 'app-events.js?v=15', 'preview-page.js?v=2', 'gif-encoder.js?v=5', 'gif-worker.js?v=5']) {
+for (const asset of ['app.css?v=6', 'app-core.js?v=6', 'motion-model.js?v=7', 'gif-retimer.js?v=1', 'apng-encoder.js?v=1', 'webp-encoder.js?v=2', 'app.js?v=17', 'app-image.js?v=5', 'app-export.js?v=10', 'app-events.js?v=16', 'preview-page.js?v=2', 'preview-page.css?v=1', 'gif-encoder.js?v=5', 'gif-worker.js?v=5']) {
   assert.ok(sw.includes(`'./${asset}'`), `sw.js is missing ${asset}`);
 }
 
@@ -138,14 +139,21 @@ assert.match(appMain, /item\.setAttribute\('aria-pressed', String\(isCurrent\)\)
 assert.match(appMain, /createCenteredPreviewUrls/);
 assert.match(appMain, /function createLivePreviewUrl\(sourceUrl\)/);
 assert.match(appMain, /preview-page\.js\?v=2/);
+assert.match(appMain, /preview-page\.css\?v=1/);
 assert.match(appMain, /data-source="\$\{safeSourceUrl\}"/);
 assert.match(appMain, /data-settings="\$\{safeSerializedSettings\}"/);
 assert.match(appMain, /previewUrl: pageObjectUrl/);
 assert.doesNotMatch(appMain, /URLSearchParams\(|pageObjectUrl\?\$\{query/);
 assert.doesNotMatch(appMain, /createAnimatedPreviewBlob|gifApi\.encodeIndexedFrames/);
 assert.match(appMain, /openCurrentPreviewInNewTab/);
-assert.match(appMain, /place-items: center/);
-assert.match(appMain, /min-height: 100svh/);
+assert.doesNotMatch(appMain, /style-src 'unsafe-inline'/);
+assert.match(appMain, /style-src 'self'/);
+assert.match(previewPageCss, /position: fixed/);
+assert.match(previewPageCss, /display: flex/);
+assert.match(previewPageCss, /align-items: center/);
+assert.match(previewPageCss, /justify-content: center/);
+assert.match(previewPageCss, /margin: 0/);
+assert.match(previewPageCss, /height: 100svh/);
 assert.match(appMain, /script-src 'self'/);
 assert.match(appMain, /URL\.revokeObjectURL\(currentPreviewObjectUrl\)/);
 assert.match(appMain, /lastGeneratedGifSettings/);
