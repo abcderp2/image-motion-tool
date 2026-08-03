@@ -102,9 +102,42 @@ assert.equal(new DataView(chunks[1].data.buffer, chunks[1].data.byteOffset).getU
 assert.equal(new DataView(chunks[1].data.buffer, chunks[1].data.byteOffset).getUint32(4), 0);
 assert.equal(new DataView(chunks[2].data.buffer, chunks[2].data.byteOffset).getUint16(20), 13);
 assert.equal(new DataView(chunks[2].data.buffer, chunks[2].data.byteOffset).getUint16(22), 100);
-assert.equal(chunks[2].data[24], 1);
+assert.equal(chunks[2].data[24], 0);
 assert.equal(chunks[2].data[25], 0);
 assert.equal(new DataView(chunks[4].data.buffer, chunks[4].data.byteOffset).getUint32(0), 1);
+assert.equal(chunks[4].data[24], 0);
+assert.equal(chunks[4].data[25], 0);
+
+const inspection = apng.inspectApng(encoded);
+assert.deepEqual({
+  width: inspection.width,
+  height: inspection.height,
+  frameCount: inspection.frameCount,
+  numPlays: inspection.numPlays,
+}, {
+  width: 2,
+  height: 1,
+  frameCount: 2,
+  numPlays: 0,
+});
+assert.deepEqual(inspection.frames, [
+  { delayNumerator: 13, delayDenominator: 100 },
+  { delayNumerator: 13, delayDenominator: 100 },
+]);
+
+const thirtyFrames = Array.from({ length: 30 }, (_, index) => (index % 2 === 0 ? first : second));
+const thirtyFrameAnimation = apng.encodeApng(thirtyFrames, {
+  delayNumerator: 10,
+  delayDenominator: 100,
+  numPlays: 0,
+  maxTotalPixels: 100,
+});
+const thirtyFrameInspection = apng.inspectApng(thirtyFrameAnimation);
+assert.equal(thirtyFrameInspection.frameCount, 30);
+assert.equal(thirtyFrameInspection.numPlays, 0);
+assert.ok(thirtyFrameInspection.frames.every((frame) => (
+  frame.delayNumerator === 10 && frame.delayDenominator === 100
+)));
 
 const firstDecoded = new Uint8Array(inflateSync(embeddedFrameData(chunks, 0)));
 const secondDecoded = new Uint8Array(inflateSync(embeddedFrameData(chunks, 1)));
@@ -119,5 +152,6 @@ assert.throws(() => apng.encodeApng([first, pngFrame(1, 1, Uint8Array.from([0, 0
 assert.throws(() => apng.encodeApng([first], { delayNumerator: 0, delayDenominator: 100 }), /間隔/);
 assert.throws(() => apng.encodeApng([first, second], { delayNumerator: 10, delayDenominator: 100, maxTotalPixels: 1 }), /総展開画素数/);
 assert.throws(() => apng.inspectPng(Uint8Array.from([137, 80, 78, 71])), /短すぎ|シグネチャ/);
+assert.throws(() => apng.inspectApng(first), /acTL|APNG/);
 
 console.log('APNG encoder tests passed');
