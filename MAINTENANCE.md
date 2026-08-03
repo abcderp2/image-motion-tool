@@ -12,7 +12,7 @@
 
 ## 変更中
 
-- 画面の見た目を変える場合は320px、768px、1024px以上で確認する
+- 画面の見た目を変える場合は、幅280px、320px、360px、768px、1024px、1440pxとスマートフォン横向きで確認する
 - 新しい設定値はapp-core.jsのDEFAULTSとsanitizeSettingsへ追加する
 - 動きの名前、座標、伸縮、回転支点を変える場合はmotion-model.jsとscripts/test_motion_model.mjsを同時に更新する
 - 左右に傾くは足元、振り子は画像上部を支点とし、同じ回転に戻さない
