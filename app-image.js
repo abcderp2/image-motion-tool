@@ -145,7 +145,7 @@ function setExportUi(active) {
     elements.presetButton,
     elements.openPreviewButton,
     elements.exportSettingsButton,
-      ]) element.disabled = active;
+  ]) element.disabled = active;
   elements.cancelExportButton.hidden = !active;
   if (!active) {
     elements.backgroundColor.disabled = settings.backgroundMode !== 'custom';
