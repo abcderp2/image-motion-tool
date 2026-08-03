@@ -60,19 +60,19 @@ elements.importSettingsInput.addEventListener('change', async () => {
 });
 
 elements.playButton.addEventListener('click', () => {
-  playing = !playing;
-  elements.playButton.textContent = playing ? '一時停止' : '再生';
-  elements.playButton.setAttribute('aria-pressed', String(!playing));
-  if (playing) animationStart = performance.now();
-  else drawPreviewNow();
+  setPlaying(!playing);
+  if (!playing) drawPreviewNow();
 });
 
-elements.presetButton.addEventListener('click', () => {
-  if (exporting) return;
-  const nextValue = nextPreset(settings.preset);
-  mutateSettings((candidate) => { candidate.preset = nextValue; });
-  setStatus(`${presetLabel(settings.preset)}へ切り替えました。`);
-});
+for (const item of presetItems) {
+  item.addEventListener('click', () => {
+    if (exporting) return;
+    const option = PRESET_OPTIONS.find((candidate) => candidate.value === item.dataset.presetValue);
+    if (!option) return;
+    mutateSettings((candidate) => { candidate.preset = option.value; });
+    setStatus(`${option.label}へ切り替えました。`);
+  });
+}
 
 elements.openPreviewButton.addEventListener('click', openCurrentPreviewInNewTab);
 
@@ -177,7 +177,7 @@ window.addEventListener('pagehide', () => {
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   window.addEventListener('load', async () => {
     try {
-      const registration = await navigator.serviceWorker.register('sw.js?v=15', {
+      const registration = await navigator.serviceWorker.register('sw.js?v=16', {
         scope: './',
         updateViaCache: 'none',
       });

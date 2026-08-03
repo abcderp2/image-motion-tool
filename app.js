@@ -28,11 +28,6 @@ function presetLabel(value) {
   return option ? option.label : PRESET_OPTIONS[0].label;
 }
 
-function nextPreset(value) {
-  const currentIndex = PRESET_OPTIONS.findIndex((candidate) => candidate.value === value);
-  return PRESET_OPTIONS[(currentIndex + 1) % PRESET_OPTIONS.length].value;
-}
-
 const elements = {
   imageInput: document.querySelector('#imageInput'),
   importSettingsInput: document.querySelector('#importSettingsInput'),
@@ -40,7 +35,6 @@ const elements = {
   canvasShell: document.querySelector('.canvas-shell'),
   playButton: document.querySelector('#playButton'),
   openPreviewButton: document.querySelector('#openPreviewButton'),
-  presetButton: document.querySelector('#presetButton'),
   presetList: document.querySelector('#presetList'),
   centerButton: document.querySelector('#centerButton'),
   flipButton: document.querySelector('#flipButton'),
@@ -311,14 +305,12 @@ function setRetimedGifPreview(blob) {
 
 function updatePresetUi() {
   const currentPresetLabel = presetLabel(settings.preset);
-  elements.presetButton.textContent = currentPresetLabel;
-  elements.presetButton.setAttribute('aria-label', `動きの種類を切り替える。現在は${currentPresetLabel}です。次の動きへ切り替えます。`);
-  elements.presetList.setAttribute('aria-label', `動きの種類の切り替え順。現在は${currentPresetLabel}です。`);
+  elements.presetList.setAttribute('aria-label', `動きの種類。現在は${currentPresetLabel}です。`);
   for (const item of presetItems) {
     const isCurrent = item.dataset.presetValue === settings.preset;
     item.dataset.current = String(isCurrent);
-    if (isCurrent) item.setAttribute('aria-current', 'true');
-    else item.removeAttribute('aria-current');
+    item.setAttribute('aria-pressed', String(isCurrent));
+    item.setAttribute('aria-label', isCurrent ? `${item.textContent}。選択中` : item.textContent);
   }
 }
 
@@ -525,15 +517,71 @@ function drawPreviewNow() {
   drawFrame(context, elements.canvas.width, elements.canvas.height, (performance.now() - animationStart) / 1000);
 }
 
+function setPlaying(nextPlaying) {
+  playing = Boolean(nextPlaying);
+  if (playing) animationStart = performance.now();
+  elements.playButton.textContent = playing ? '一時停止' : '再生';
+  elements.playButton.setAttribute('aria-pressed', String(!playing));
+}
+
 function render(now) {
   if (playing) drawFrame(context, elements.canvas.width, elements.canvas.height, (now - animationStart) / 1000);
   animationFrame = requestAnimationFrame(render);
 }
 
-function canvasPreviewBlob() {
-  return new Promise((resolve) => {
-    elements.canvas.toBlob(resolve, 'image/png');
+async function createAnimatedPreviewBlob() {
+  const previewSettings = core.sanitizeSettings({
+    ...settings,
+    gifSize: 360,
+    duration: 2,
+    fps: Math.min(settings.fps, 10),
+    gifQuality: 'fast',
+    animationFormat: 'gif',
   });
+  const dimensions = core.ratioDimensions(previewSettings.gifSize, previewSettings.canvasRatio);
+  const canvas = document.createElement('canvas');
+  canvas.width = dimensions.width;
+  canvas.height = dimensions.height;
+  const exportContext = canvas.getContext('2d', { alpha: true, willReadFrequently: true });
+  if (!exportContext) throw new Error('別タブ用プレビューの描画領域を作成できませんでした。');
+
+  const transparent = settings.backgroundMode === 'transparent';
+  const palette = gifApi.fixedPalette();
+  const lookup = gifApi.createPaletteLookup(palette, { transparent });
+  const frames = [];
+  let prepared = null;
+  try {
+    prepared = prepareSourceForOutput(dimensions.width, dimensions.height);
+    for (let index = 0; index < previewSettings.duration * previewSettings.fps; index += 1) {
+      drawFrame(exportContext, dimensions.width, dimensions.height, index / previewSettings.fps, {
+        source: prepared,
+        forExport: true,
+      });
+      const rgba = exportContext.getImageData(0, 0, dimensions.width, dimensions.height).data;
+      frames.push(gifApi.rgbaToIndexed(rgba, {
+        transparent,
+        palette,
+        lookup,
+        width: dimensions.width,
+        dither: 'none',
+        ditherStrength: 0,
+      }));
+      if (index % 2 === 1) await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+    const encoded = gifApi.encodeIndexedFrames({
+      width: dimensions.width,
+      height: dimensions.height,
+      delay: core.gifFrameDelay(previewSettings),
+      transparent,
+      palette,
+      frames,
+    });
+    return new Blob([encoded], { type: 'image/gif' });
+  } finally {
+    frames.length = 0;
+    if (prepared !== image) releaseCanvas(prepared);
+    releaseCanvas(canvas);
+  }
 }
 
 async function openCurrentPreviewInNewTab() {
@@ -551,14 +599,14 @@ async function openCurrentPreviewInNewTab() {
 
   try {
     previewWindow.opener = null;
-    const blob = await canvasPreviewBlob();
-    if (!blob) throw new Error('現在のプレビューを作成できませんでした。');
+    setStatus('別タブ用の動くプレビューを作成しています。');
+    const blob = await createAnimatedPreviewBlob();
     clearCurrentPreview();
-    const previewUrls = createCenteredPreviewUrls(blob, '画像モーションツールのプレビュー', '現在のプレビュー');
+    const previewUrls = createCenteredPreviewUrls(blob, '画像モーションツールの動くプレビュー', '現在の動くプレビュー');
     currentPreviewObjectUrl = previewUrls.pageObjectUrl;
     currentPreviewMediaObjectUrl = previewUrls.mediaObjectUrl;
     previewWindow.location.replace(currentPreviewObjectUrl);
-    setStatus('現在のプレビューを別タブで開きました。');
+    setStatus('現在の動くプレビューを別タブで開きました。');
   } catch (error) {
     if (!previewWindow.closed) previewWindow.close();
     setStatus(error instanceof Error ? error.message : 'プレビューを別タブで開けませんでした。');
