@@ -1,19 +1,19 @@
 'use strict';
 
-const CACHE_NAME = 'image-motion-tool-v15';
+const CACHE_NAME = 'image-motion-tool-v16';
 const APP_SHELL = Object.freeze([
   './',
   './index.html',
-  './app.css?v=5',
+  './app.css?v=6',
   './app-core.js?v=6',
   './motion-model.js?v=7',
   './gif-retimer.js?v=1',
   './apng-encoder.js?v=1',
   './webp-encoder.js?v=2',
-  './app.js?v=13',
+  './app.js?v=14',
   './app-image.js?v=5',
   './app-export.js?v=10',
-  './app-events.js?v=12',
+  './app-events.js?v=13',
   './gif-encoder.js?v=5',
   './gif-worker.js?v=5',
   './manifest.webmanifest',
