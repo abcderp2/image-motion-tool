@@ -40,6 +40,7 @@ const elements = {
   canvasShell: document.querySelector('.canvas-shell'),
   playButton: document.querySelector('#playButton'),
   openPreviewButton: document.querySelector('#openPreviewButton'),
+  presetButton: document.querySelector('#presetButton'),
   centerButton: document.querySelector('#centerButton'),
   flipButton: document.querySelector('#flipButton'),
   removeImageButton: document.querySelector('#removeImageButton'),
