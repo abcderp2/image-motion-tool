@@ -87,7 +87,7 @@
           <div class="control-grid details-grid">
             <label class="check-control" for="reverse"><input id="reverse" type="checkbox"><span>動きを逆向きにする</span></label>
           </div>
-          <p class="help-text">保存時は、動きの速さを再生速度に反映します。指定した動作回数で、先頭と末尾がつながる周期を保ちます。</p>
+          <p class="help-text">保存時は、動きの速さを再生速度に反映します。指定した動作回数に応じて、先頭と末尾が自然につながる周期で保存します。</p>
         </details>
       </section>
 
@@ -112,7 +112,7 @@
             <a id="openGifPreviewLink" class="file-button secondary-file-button" target="_blank" rel="noopener noreferrer" aria-describedby="gifPreviewHelp" hidden>保存したアニメーションを別タブで開く</a>
             <button id="regenerateGifButton" class="secondary-button" type="button" hidden>速度を変えて再生成</button>
           </div>
-          <p id="gifPreviewHelp" class="help-text" hidden>生成したファイルそのものを別タブで表示します。APNGやアニメーションWebPはブラウザによって表示が異なるため、表示できない場合でも保存ファイルは利用できます。一時URLは次の生成時またはページを閉じた時に破棄します。</p>
+          <p id="gifPreviewHelp" class="help-text" hidden>生成したファイルそのものを別タブで表示します。APNGやアニメーションWebPはブラウザによって表示が異なるため、表示できない場合でも保存ファイルは利用できます。一時URLは次の生成時またはページを閉じたときに破棄します。</p>
           <p id="regenerateGifHelp" class="help-text" hidden>最後に生成した設定を使い、現在の速度だけに変えて再生成します。生成済みGIFそのものは編集しません。</p>
           <div class="gif-retime-box">
             <p class="subheading">生成済みGIFの速度変更</p>
@@ -123,7 +123,7 @@
               <p id="gifRetimeInfo" class="estimate"></p>
               <button id="retimeGifButton" class="secondary-button" type="button">速度を変更して保存</button>
               <a id="openRetimedGifPreviewLink" class="file-button secondary-file-button" target="_blank" rel="noopener noreferrer" aria-describedby="gifRetimePreviewHelp" hidden>速度変更後のGIFを開く</a>
-              <p id="gifRetimePreviewHelp" class="help-text" hidden>速度変更後のGIFを別タブで表示します。一時URLは次の速度変更時またはページを閉じた時に破棄します。</p>
+              <p id="gifRetimePreviewHelp" class="help-text" hidden>速度変更後のGIFを別タブで表示します。一時URLは次の速度変更時またはページを閉じたときに破棄します。</p>
               <p id="gifRetimeHelp" class="help-text">生成済みGIFの速度変更は、フレーム画像を再描画せず、各フレームの表示時間だけを変更します。透過、ループ情報、色、画像データは元のGIFを保ちます。</p>
             </div>
           </div>
