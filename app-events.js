@@ -67,6 +67,15 @@ elements.playButton.addEventListener('click', () => {
   else drawPreviewNow();
 });
 
+elements.presetButton.addEventListener('click', () => {
+  if (exporting) return;
+  const nextValue = nextPreset(settings.preset);
+  mutateSettings((candidate) => { candidate.preset = nextValue; });
+  setStatus(`${presetLabel(settings.preset)}へ切り替えました。`);
+});
+
+elements.openPreviewButton.addEventListener('click', openCurrentPreviewInNewTab);
+
 elements.centerButton.addEventListener('click', () => {
   mutateSettings((candidate) => {
     candidate.offsetX = 0;
@@ -161,6 +170,7 @@ window.addEventListener('pagehide', () => {
   if (imageObjectUrl) URL.revokeObjectURL(imageObjectUrl);
   clearGifPreview();
   clearRetimedGifPreview();
+  clearCurrentPreview();
   if (activeWorker) activeWorker.terminate();
 });
 
@@ -180,6 +190,7 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
 
 applySettingsToControls();
 elements.removeImageButton.disabled = true;
+elements.openPreviewButton.disabled = true;
 elements.playButton.textContent = playing ? '一時停止' : '再生';
 elements.playButton.setAttribute('aria-pressed', String(!playing));
 resizePreview();
