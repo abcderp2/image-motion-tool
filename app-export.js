@@ -213,12 +213,19 @@ async function exportApng() {
       maxOutputBytes: estimate.maxOutputBytes,
     });
     ensureNotCancelled();
+    const output = apngApi.inspectApng(encoded, { maxDimension: core.LIMITS.maxDimension });
+    const timingMatches = output.frames.every((frame) => (
+      frame.delayNumerator === estimate.frameDelay && frame.delayDenominator === 100
+    ));
+    if (output.frameCount !== estimate.frames || output.numPlays !== 0 || !timingMatches) {
+      throw new Error('APNGの出力検査に失敗しました。保存を中止しました。');
+    }
     elements.progress.value = 100;
     const blob = new Blob([encoded], { type: 'image/apng' });
     lastGeneratedGifSettings = null;
     setGifPreview(blob, 'apng');
     downloadBlob(blob, `image-motion-${fileTimestamp()}.png`);
-    setStatus(`APNGを保存しました。${roundedDelayMessage(settings, estimate.frameDelay)}表示できない環境では保存したPNGを利用できます。`);
+    setStatus(`APNGを保存しました。${roundedDelayMessage(settings, estimate.frameDelay)}保存したAPNGを別タブで開いて動きを確認できます。写真アプリがAPNGを静止画として扱う場合は、アニメーションWebPも試してください。`);
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') setStatus('APNG生成を中止しました。');
     else setStatus(error instanceof Error ? error.message : 'APNGを生成できませんでした。');
