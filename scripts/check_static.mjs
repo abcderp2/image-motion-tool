@@ -52,7 +52,7 @@ assert.equal(manifest.start_url, './');
 assert.equal(manifest.scope, './');
 
 assert.match(index, /application-version" content="13"/);
-assert.match(index, /Build 12/);
+assert.match(index, /Build 13/);
 assert.match(index, /app-core\.js\?v=6/);
 assert.match(index, /motion-model\.js\?v=7/);
 assert.match(index, /gif-retimer\.js\?v=1/);
