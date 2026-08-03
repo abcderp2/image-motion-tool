@@ -6,6 +6,8 @@
   const MAX_FRAMES = 4096;
   const MAX_DIMENSION = 8192;
   const MAX_TOTAL_PIXELS = 24_000_000;
+  const APNG_DISPOSE_OP_NONE = 0;
+  const APNG_BLEND_OP_SOURCE = 0;
   const CRC_TABLE = new Uint32Array(256);
 
   for (let index = 0; index < CRC_TABLE.length; index += 1) {
@@ -33,6 +35,10 @@
       + bytes[offset + 2] * 0x100
       + bytes[offset + 3]
     );
+  }
+
+  function readU16(bytes, offset) {
+    return bytes[offset] * 0x100 + bytes[offset + 1];
   }
 
   function writeU16(bytes, offset, value) {
@@ -90,6 +96,17 @@
     return result;
   }
 
+  function inspectIhdr(data, maxDimension) {
+    if (data.length !== 13) fail('IHDRの長さが不正です。');
+    const width = readU32(data, 0);
+    const height = readU32(data, 4);
+    if (!width || !height || width > maxDimension || height > maxDimension) fail('画像寸法が安全な範囲外です。');
+    if (data[8] !== 8 || data[9] !== 6 || data[10] !== 0 || data[11] !== 0 || data[12] !== 0) {
+      fail('8ビットRGBAのPNGだけを扱えます。');
+    }
+    return Object.freeze({ width, height });
+  }
+
   function parsePng(value, options = {}) {
     const bytes = asBytes(value);
     const maxDimension = Number.isInteger(options.maxDimension) ? options.maxDimension : MAX_DIMENSION;
@@ -114,20 +131,15 @@
       const type = readType(bytes, typeOffset);
       const dataStart = offset + 8;
       const dataEnd = dataStart + length;
-      const data = bytes.slice(dataStart, dataEnd);
+      const data = bytes.subarray(dataStart, dataEnd);
       const expectedCrc = readU32(bytes, dataEnd);
-      const actualCrc = crc32(bytes.slice(typeOffset, typeOffset + 4), data);
+      const actualCrc = crc32(bytes.subarray(typeOffset, typeOffset + 4), data);
       if (expectedCrc !== actualCrc) fail(`CRCが不正です（${type}）。`);
 
       if (chunkIndex === 0 && type !== 'IHDR') fail('IHDRが先頭にありません。');
       if (type === 'IHDR') {
-        if (sawIhdr || length !== 13) fail('IHDRの長さが不正です。');
-        const width = readU32(data, 0);
-        const height = readU32(data, 4);
-        if (!width || !height || width > maxDimension || height > maxDimension) fail('画像寸法が安全な範囲外です。');
-        if (data[8] !== 8 || data[9] !== 6 || data[10] !== 0 || data[11] !== 0 || data[12] !== 0) {
-          fail('8ビットRGBAのPNGだけを扱えます。');
-        }
+        if (sawIhdr) fail('IHDRの長さが不正です。');
+        inspectIhdr(data, maxDimension);
         ihdr = data;
         sawIhdr = true;
       } else if (type === 'IDAT') {
@@ -164,6 +176,120 @@
     });
   }
 
+  function inspectApng(value, options = {}) {
+    const bytes = asBytes(value);
+    const maxDimension = Number.isInteger(options.maxDimension) ? options.maxDimension : MAX_DIMENSION;
+    if (bytes.length < 57) fail('APNGファイルが短すぎます。');
+    if (!PNG_SIGNATURE.every((byte, index) => bytes[index] === byte)) fail('PNGシグネチャがありません。');
+
+    let offset = PNG_SIGNATURE.length;
+    let chunkIndex = 0;
+    let sawIhdr = false;
+    let sawAnimationControl = false;
+    let sawFirstFrameData = false;
+    let sawIend = false;
+    let width = 0;
+    let height = 0;
+    let declaredFrameCount = 0;
+    let numPlays = 0;
+    let expectedSequence = 0;
+    let currentFrame = null;
+    const frames = [];
+
+    while (offset < bytes.length) {
+      if (bytes.length - offset < 12) fail('チャンクヘッダーが途中で終わっています。');
+      const length = readU32(bytes, offset);
+      if (length > 0x7fffffff || length > bytes.length - offset - 12) fail('チャンク長が不正です。');
+      const typeOffset = offset + 4;
+      if (!isChunkType(bytes, typeOffset)) fail('チャンク名が不正です。');
+      const type = readType(bytes, typeOffset);
+      const dataStart = offset + 8;
+      const dataEnd = dataStart + length;
+      const data = bytes.subarray(dataStart, dataEnd);
+      const expectedCrc = readU32(bytes, dataEnd);
+      const actualCrc = crc32(bytes.subarray(typeOffset, typeOffset + 4), data);
+      if (expectedCrc !== actualCrc) fail(`CRCが不正です（${type}）。`);
+
+      if (chunkIndex === 0 && type !== 'IHDR') fail('IHDRが先頭にありません。');
+      if (type === 'IHDR') {
+        if (sawIhdr) fail('IHDRが重複しています。');
+        const ihdr = inspectIhdr(data, maxDimension);
+        width = ihdr.width;
+        height = ihdr.height;
+        sawIhdr = true;
+      } else if (type === 'acTL') {
+        if (!sawIhdr || sawAnimationControl || sawFirstFrameData || frames.length !== 0 || length !== 8) {
+          fail('acTLの位置または長さが不正です。');
+        }
+        declaredFrameCount = readU32(data, 0);
+        numPlays = readU32(data, 4);
+        if (!declaredFrameCount || declaredFrameCount > MAX_FRAMES) fail('APNGのフレーム数が不正です。');
+        sawAnimationControl = true;
+      } else if (type === 'fcTL') {
+        if (!sawAnimationControl || sawIend || length !== 26) fail('fcTLの位置または長さが不正です。');
+        if (frames.length === 0 ? sawFirstFrameData : !sawFirstFrameData) fail('fcTLの順序が不正です。');
+        if (currentFrame && currentFrame.dataChunks === 0) fail('フレーム画像データがありません。');
+        if (frames.length >= declaredFrameCount) fail('fcTLの数が多すぎます。');
+        if (readU32(data, 0) !== expectedSequence) fail('APNGのフレーム順序が不正です。');
+        expectedSequence += 1;
+        const frameWidth = readU32(data, 4);
+        const frameHeight = readU32(data, 8);
+        if (frameWidth !== width || frameHeight !== height || readU32(data, 12) !== 0 || readU32(data, 16) !== 0) {
+          fail('APNGフレームの寸法または位置が不正です。');
+        }
+        const delayNumerator = readU16(data, 20);
+        const delayDenominator = readU16(data, 22);
+        if (!delayNumerator || !delayDenominator) fail('APNGの表示時間が不正です。');
+        if (data[24] !== APNG_DISPOSE_OP_NONE || data[25] !== APNG_BLEND_OP_SOURCE) {
+          fail('APNGフレームの合成方式が不正です。');
+        }
+        currentFrame = { delayNumerator, delayDenominator, dataChunks: 0 };
+        frames.push(currentFrame);
+      } else if (type === 'IDAT') {
+        if (!sawAnimationControl || !currentFrame || frames.length !== 1 || sawIend || length === 0) {
+          fail('IDATの位置または長さが不正です。');
+        }
+        sawFirstFrameData = true;
+        currentFrame.dataChunks += 1;
+      } else if (type === 'fdAT') {
+        if (!sawAnimationControl || !currentFrame || frames.length < 2 || !sawFirstFrameData || sawIend || length <= 4) {
+          fail('fdATの位置または長さが不正です。');
+        }
+        if (readU32(data, 0) !== expectedSequence) fail('APNGのフレーム順序が不正です。');
+        expectedSequence += 1;
+        currentFrame.dataChunks += 1;
+      } else if (type === 'IEND') {
+        if (length !== 0 || !sawIhdr || !sawAnimationControl || !sawFirstFrameData || !currentFrame || currentFrame.dataChunks === 0 || sawIend) {
+          fail('IENDの位置または長さが不正です。');
+        }
+        if (frames.length !== declaredFrameCount) fail('APNGのフレーム数が一致しません。');
+        sawIend = true;
+      } else {
+        const isCritical = bytes[typeOffset] >= 65 && bytes[typeOffset] <= 90;
+        if (isCritical) fail(`未対応の重要チャンクがあります（${type}）。`);
+      }
+
+      offset = dataEnd + 4;
+      chunkIndex += 1;
+      if (sawIend) {
+        if (offset !== bytes.length) fail('IENDの後ろにデータがあります。');
+        break;
+      }
+    }
+
+    if (!sawIhdr || !sawAnimationControl || !sawFirstFrameData || !sawIend) fail('必要なAPNGチャンクがありません。');
+    return Object.freeze({
+      width,
+      height,
+      frameCount: frames.length,
+      numPlays,
+      frames: Object.freeze(frames.map((frame) => Object.freeze({
+        delayNumerator: frame.delayNumerator,
+        delayDenominator: frame.delayDenominator,
+      }))),
+    });
+  }
+
   function appendFrameData(parts, frame, type, sequence) {
     const chunkLimit = type === 'fdAT' ? MAX_CHUNK_PAYLOAD - 4 : MAX_CHUNK_PAYLOAD;
     for (const idat of frame.idatChunks) {
@@ -191,8 +317,10 @@
     writeU32(data, 16, 0);
     writeU16(data, 20, delayNumerator);
     writeU16(data, 22, delayDenominator);
-    data[24] = 1;
-    data[25] = 0;
+    // Every frame replaces the full canvas. Keeping the completed frame avoids
+    // requiring decoders to clear an intermediate canvas before the next frame.
+    data[24] = APNG_DISPOSE_OP_NONE;
+    data[25] = APNG_BLEND_OP_SOURCE;
     return data;
   }
 
@@ -242,6 +370,7 @@
     MAX_DIMENSION,
     parsePng,
     inspectPng: parsePng,
+    inspectApng,
     encodeApng,
   });
 
