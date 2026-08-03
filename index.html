@@ -8,7 +8,7 @@
   <meta name="description" content="画像を端末内だけで動かし、GIF、APNG、アニメーションWebP、PNG、JPEG、WebPへ保存できる無料ツールです。">
   <meta name="theme-color" content="#f6f8fc">
   <meta name="color-scheme" content="light">
-  <meta name="application-version" content="13">
+  <meta name="application-version" content="14">
   <link rel="canonical" href="https://abcderp2.github.io/image-motion-tool/">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -20,10 +20,10 @@
   <script src="gif-retimer.js?v=1" defer></script>
   <script src="apng-encoder.js?v=1" defer></script>
   <script src="webp-encoder.js?v=2" defer></script>
-  <script src="app.js?v=11" defer></script>
+  <script src="app.js?v=12" defer></script>
   <script src="app-image.js?v=5" defer></script>
   <script src="app-export.js?v=10" defer></script>
-  <script src="app-events.js?v=11" defer></script>
+  <script src="app-events.js?v=12" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">操作画面へ移動</a>
@@ -75,7 +75,7 @@
           <button id="resetButton" class="secondary-button" type="button">設定を初期化</button>
         </div>
         <div class="control-grid">
-          <div class="control control-wide"><span id="presetLabel">動きの種類</span><button id="presetButton" class="preset-button" type="button" aria-label="動きの種類を切り替える。現在はふわふわ上下です。" aria-describedby="presetHelp">ふわふわ上下</button><p class="help-text preset-help" id="presetHelp">ボタンを押すたびに、次の動きへ切り替わります。最後の次は最初へ戻ります。</p></div>
+          <div class="control control-wide"><span id="presetLabel">動きの種類</span><button id="presetButton" class="preset-button" type="button" aria-label="動きの種類を切り替える。現在はふわふわ上下です。" aria-describedby="presetHelp">ふわふわ上下</button><p class="help-text preset-help" id="presetHelp">ボタンを押すたびに、現在の動きが次の順番へ切り替わります。順番は、ふわふわ上下、呼吸、ゆっくり拡大、左右に傾く、振り子、円運動、ジャンプ、弾む伸縮、細かく揺れるです。最後の次は最初へ戻ります。</p></div>
           <label class="control" for="amplitude"><span>移動量 <output id="amplitudeValue" for="amplitude"></output></span><input id="amplitude" type="range" min="0" max="60" step="1"></label>
           <label class="control" for="speed"><span>動きの速さ <output id="speedValue" for="speed"></output></span><input id="speed" type="range" min="0.2" max="2" step="0.05"></label>
           <label class="control" for="rotation"><span>回転量 <output id="rotationValue" for="rotation"></output></span><input id="rotation" type="range" min="0" max="24" step="1"></label>
@@ -173,7 +173,7 @@
     </section>
   </main>
 
-  <footer class="site-footer"><div class="page-width"><p>画像モーションツール Build 13</p><p>外部送信なし、外部ライブラリなし、追加課金なし</p><p>検索エンジンやAIによる公開ページの訪問、利用者の指示による取得、要約、引用を歓迎します。<a href="ai.txt">AI向け公開方針</a></p></div></footer>
+  <footer class="site-footer"><div class="page-width"><p>画像モーションツール Build 14</p><p>外部送信なし、外部ライブラリなし、追加課金なし</p><p>検索エンジンやAIによる公開ページの訪問、利用者の指示による取得、要約、引用を歓迎します。<a href="ai.txt">AI向け公開方針</a></p></div></footer>
   <noscript><p class="noscript-message">このツールを使うにはJavaScriptを有効にしてください。</p></noscript>
 </body>
 </html>
