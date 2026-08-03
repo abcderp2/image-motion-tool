@@ -225,7 +225,7 @@ async function exportApng() {
     lastGeneratedGifSettings = null;
     setGifPreview(blob, 'apng');
     downloadBlob(blob, `image-motion-${fileTimestamp()}.png`);
-    setStatus(`APNGを保存しました。${roundedDelayMessage(settings, estimate.frameDelay)}保存したAPNGを別タブで開いて動きを確認できます。写真アプリがAPNGを静止画として扱う場合は、アニメーションWebPも試してください。`);
+    setStatus(`APNGを保存しました。${roundedDelayMessage(settings, estimate.frameDelay)}対応ブラウザでは別タブで動きを確認できます。端末やアプリがAPNG再生に対応していない場合は、ダウンロード後も静止画として表示されます。`);
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') setStatus('APNG生成を中止しました。');
     else setStatus(error instanceof Error ? error.message : 'APNGを生成できませんでした。');
