@@ -11,12 +11,35 @@ const gifApi = window.ImageMotionGif;
 const gifRetimer = window.ImageMotionGifRetimer;
 if (!core || !motionModel || !gifApi || !gifRetimer) throw new Error('必要な処理ファイルを読み込めませんでした。');
 
+const PRESET_OPTIONS = Object.freeze([
+  { value: 'float', label: 'ふわふわ上下' },
+  { value: 'breathe', label: '呼吸' },
+  { value: 'zoom', label: 'ゆっくり拡大' },
+  { value: 'sway', label: '左右に傾く' },
+  { value: 'pendulum', label: '振り子' },
+  { value: 'orbit', label: '円運動' },
+  { value: 'bounce', label: 'ジャンプ' },
+  { value: 'squash', label: '弾む伸縮' },
+  { value: 'shake', label: '細かく揺れる' },
+]);
+
+function presetLabel(value) {
+  const option = PRESET_OPTIONS.find((candidate) => candidate.value === value);
+  return option ? option.label : PRESET_OPTIONS[0].label;
+}
+
+function nextPreset(value) {
+  const currentIndex = PRESET_OPTIONS.findIndex((candidate) => candidate.value === value);
+  return PRESET_OPTIONS[(currentIndex + 1) % PRESET_OPTIONS.length].value;
+}
+
 const elements = {
   imageInput: document.querySelector('#imageInput'),
   importSettingsInput: document.querySelector('#importSettingsInput'),
   canvas: document.querySelector('#previewCanvas'),
   canvasShell: document.querySelector('.canvas-shell'),
   playButton: document.querySelector('#playButton'),
+  openPreviewButton: document.querySelector('#openPreviewButton'),
   centerButton: document.querySelector('#centerButton'),
   flipButton: document.querySelector('#flipButton'),
   removeImageButton: document.querySelector('#removeImageButton'),
@@ -48,7 +71,7 @@ const elements = {
 };
 
 const controlIds = [
-  'preset', 'amplitude', 'speed', 'rotation', 'pulse', 'zoom', 'reverse', 'loopCycles',
+  'amplitude', 'speed', 'rotation', 'pulse', 'zoom', 'reverse', 'loopCycles',
   'canvasRatio', 'animationFormat', 'gifSize', 'duration', 'fps', 'gifQuality', 'webpQuality', 'stillSize', 'stillFormat',
   'stillQuality', 'backgroundMode', 'backgroundColor',
 ];
@@ -72,8 +95,12 @@ let image = null;
 let imageMetadata = null;
 let imageObjectUrl = '';
 let gifPreviewObjectUrl = '';
+let gifPreviewMediaObjectUrl = '';
 let gifPreviewFormat = 'gif';
 let retimedGifPreviewObjectUrl = '';
+let retimedGifPreviewMediaObjectUrl = '';
+let currentPreviewObjectUrl = '';
+let currentPreviewMediaObjectUrl = '';
 let gifRetimeBytes = null;
 let gifRetimeInfo = null;
 let gifRetimeFileName = '';
@@ -130,9 +157,85 @@ function setStatus(message) {
   elements.status.textContent = message;
 }
 
+function clearCurrentPreview() {
+  if (currentPreviewObjectUrl) URL.revokeObjectURL(currentPreviewObjectUrl);
+  if (currentPreviewMediaObjectUrl) URL.revokeObjectURL(currentPreviewMediaObjectUrl);
+  currentPreviewObjectUrl = '';
+  currentPreviewMediaObjectUrl = '';
+}
+
+function escapeHtmlAttribute(value) {
+  const replacements = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  };
+  return String(value).replace(/[&<>"']/g, (character) => replacements[character]);
+}
+
+function createCenteredPreviewUrls(blob, title, alt) {
+  if (!(blob instanceof Blob)) throw new Error('プレビューを作成できませんでした。');
+  const mediaObjectUrl = URL.createObjectURL(blob);
+  try {
+    const safeMediaUrl = escapeHtmlAttribute(mediaObjectUrl);
+    const safeTitle = escapeHtmlAttribute(title);
+    const safeAlt = escapeHtmlAttribute(alt);
+    const documentText = `<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; img-src blob:; style-src 'unsafe-inline'">
+  <title>${safeTitle}</title>
+  <style>
+    :root { color-scheme: light; background: #f6f8fc; }
+    * { box-sizing: border-box; }
+    html { min-height: 100%; background: #f6f8fc; }
+    body {
+      display: grid;
+      place-items: center;
+      min-width: 280px;
+      min-height: 100vh;
+      min-height: 100dvh;
+      margin: 0;
+      padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+      background: #f6f8fc;
+      overflow: auto;
+    }
+    img {
+      display: block;
+      width: auto;
+      height: auto;
+      max-width: 100%;
+      max-height: calc(100vh - 2rem);
+      max-height: calc(100dvh - 2rem);
+      object-fit: contain;
+      border-radius: 10px;
+      background: #ffffff;
+      box-shadow: 0 4px 18px rgba(23, 32, 51, 0.18);
+    }
+  </style>
+</head>
+<body>
+  <img src="${safeMediaUrl}" alt="${safeAlt}">
+</body>
+</html>`;
+    const pageObjectUrl = URL.createObjectURL(new Blob([documentText], { type: 'text/html' }));
+    return { mediaObjectUrl, pageObjectUrl };
+  } catch (error) {
+    URL.revokeObjectURL(mediaObjectUrl);
+    throw error;
+  }
+}
+
 function clearGifPreview() {
   if (gifPreviewObjectUrl) URL.revokeObjectURL(gifPreviewObjectUrl);
+  if (gifPreviewMediaObjectUrl) URL.revokeObjectURL(gifPreviewMediaObjectUrl);
   gifPreviewObjectUrl = '';
+  gifPreviewMediaObjectUrl = '';
   gifPreviewFormat = 'gif';
   elements.openGifPreviewLink.removeAttribute('href');
   elements.openGifPreviewLink.hidden = true;
@@ -148,7 +251,9 @@ function hideGifRegeneration() {
 
 function setGifPreview(blob, format = 'gif') {
   clearGifPreview();
-  gifPreviewObjectUrl = URL.createObjectURL(blob);
+  const previewUrls = createCenteredPreviewUrls(blob, '画像モーションツールの生成プレビュー', '生成したアニメーション');
+  gifPreviewObjectUrl = previewUrls.pageObjectUrl;
+  gifPreviewMediaObjectUrl = previewUrls.mediaObjectUrl;
   gifPreviewFormat = format;
   elements.openGifPreviewLink.href = gifPreviewObjectUrl;
   const formatLabel = format === 'apng' ? 'APNG' : format === 'webp' ? 'アニメーションWebP' : 'GIF';
@@ -166,7 +271,9 @@ function setGifPreview(blob, format = 'gif') {
 
 function clearRetimedGifPreview() {
   if (retimedGifPreviewObjectUrl) URL.revokeObjectURL(retimedGifPreviewObjectUrl);
+  if (retimedGifPreviewMediaObjectUrl) URL.revokeObjectURL(retimedGifPreviewMediaObjectUrl);
   retimedGifPreviewObjectUrl = '';
+  retimedGifPreviewMediaObjectUrl = '';
   elements.openRetimedGifPreviewLink.removeAttribute('href');
   elements.openRetimedGifPreviewLink.hidden = true;
   elements.gifRetimePreviewHelp.hidden = true;
@@ -190,13 +297,18 @@ function setGifRetimeSource(bytes, info, fileName) {
 
 function setRetimedGifPreview(blob) {
   clearRetimedGifPreview();
-  retimedGifPreviewObjectUrl = URL.createObjectURL(blob);
+  const previewUrls = createCenteredPreviewUrls(blob, '画像モーションツールの速度変更プレビュー', '速度変更後のGIF');
+  retimedGifPreviewObjectUrl = previewUrls.pageObjectUrl;
+  retimedGifPreviewMediaObjectUrl = previewUrls.mediaObjectUrl;
   elements.openRetimedGifPreviewLink.href = retimedGifPreviewObjectUrl;
   elements.openRetimedGifPreviewLink.hidden = false;
   elements.gifRetimePreviewHelp.hidden = false;
 }
 
 function applySettingsToControls() {
+  const currentPresetLabel = presetLabel(settings.preset);
+  elements.presetButton.textContent = currentPresetLabel;
+  elements.presetButton.setAttribute('aria-label', `動きの種類を切り替える。現在は${currentPresetLabel}です。次の動きへ切り替えます。`);
   for (const id of controlIds) {
     const element = elements[id];
     if (!element) continue;
@@ -401,6 +513,41 @@ function drawPreviewNow() {
 function render(now) {
   if (playing) drawFrame(context, elements.canvas.width, elements.canvas.height, (now - animationStart) / 1000);
   animationFrame = requestAnimationFrame(render);
+}
+
+function canvasPreviewBlob() {
+  return new Promise((resolve) => {
+    elements.canvas.toBlob(resolve, 'image/png');
+  });
+}
+
+async function openCurrentPreviewInNewTab() {
+  if (!image) {
+    setStatus('先に画像を選んでください。');
+    return;
+  }
+  if (exporting) return;
+
+  const previewWindow = window.open('about:blank', '_blank');
+  if (!previewWindow) {
+    setStatus('別タブを開けませんでした。ブラウザのポップアップ設定を確認してください。');
+    return;
+  }
+
+  try {
+    previewWindow.opener = null;
+    const blob = await canvasPreviewBlob();
+    if (!blob) throw new Error('現在のプレビューを作成できませんでした。');
+    clearCurrentPreview();
+    const previewUrls = createCenteredPreviewUrls(blob, '画像モーションツールのプレビュー', '現在のプレビュー');
+    currentPreviewObjectUrl = previewUrls.pageObjectUrl;
+    currentPreviewMediaObjectUrl = previewUrls.mediaObjectUrl;
+    previewWindow.location.replace(currentPreviewObjectUrl);
+    setStatus('現在のプレビューを別タブで開きました。');
+  } catch (error) {
+    if (!previewWindow.closed) previewWindow.close();
+    setStatus(error instanceof Error ? error.message : 'プレビューを別タブで開けませんでした。');
+  }
 }
 
 function resizePreview() {
