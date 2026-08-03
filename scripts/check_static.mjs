@@ -51,25 +51,25 @@ assert.doesNotMatch(sw, /cache\.put\(/);
 assert.equal(manifest.start_url, './');
 assert.equal(manifest.scope, './');
 
-assert.match(index, /application-version" content="12"/);
+assert.match(index, /application-version" content="13"/);
 assert.match(index, /Build 12/);
 assert.match(index, /app-core\.js\?v=6/);
 assert.match(index, /motion-model\.js\?v=7/);
 assert.match(index, /gif-retimer\.js\?v=1/);
 assert.match(index, /apng-encoder\.js\?v=1/);
 assert.match(index, /webp-encoder\.js\?v=2/);
-assert.match(index, /app\.js\?v=10/);
+assert.match(index, /app\.js\?v=11/);
 assert.match(index, /gif-encoder\.js\?v=5/);
 assert.match(index, /app-image\.js\?v=5/);
 assert.match(index, /app-export\.js\?v=10/);
-assert.match(index, /app-events\.js\?v=10/);
+assert.match(index, /app-events\.js\?v=11/);
 assert.match(appExport, /gif-worker\.js\?v=5/);
 assert.match(appExport, /ImageMotionApng/);
 assert.match(appExport, /ImageMotionWebp/);
-assert.match(appEvents, /sw\.js\?v=12/);
+assert.match(appEvents, /sw\.js\?v=13/);
 assert.match(appEvents, /updateViaCache: 'none'/);
 assert.match(worker, /gif-encoder\.js\?v=5/);
-assert.match(sw, /image-motion-tool-v12/);
+assert.match(sw, /image-motion-tool-v13/);
 assert.match(pagesWorkflow, /persist-credentials: false/);
 assert.match(pagesWorkflow, /actions\/setup-node@v5/);
 assert.match(pagesWorkflow, /node-version: 24/);
@@ -80,17 +80,26 @@ assert.match(encoder, /transparent \? 0x09 : 0x04/);
 assert.match(encoder, /colors\.length - 1/);
 assert.match(encoder, /palette box must contain colors/);
 assert.doesNotMatch(appExport, /dither: 'error-diffusion'/);
-assert.match(index, /app\.css\?v=3/);
-for (const asset of ['app.css?v=3', 'app-core.js?v=6', 'motion-model.js?v=7', 'gif-retimer.js?v=1', 'apng-encoder.js?v=1', 'webp-encoder.js?v=2', 'app.js?v=10', 'app-image.js?v=5', 'app-export.js?v=10', 'app-events.js?v=10', 'gif-encoder.js?v=5', 'gif-worker.js?v=5']) {
+assert.match(index, /app\.css\?v=4/);
+for (const asset of ['app.css?v=4', 'app-core.js?v=6', 'motion-model.js?v=7', 'gif-retimer.js?v=1', 'apng-encoder.js?v=1', 'webp-encoder.js?v=2', 'app.js?v=11', 'app-image.js?v=5', 'app-export.js?v=10', 'app-events.js?v=11', 'gif-encoder.js?v=5', 'gif-worker.js?v=5']) {
   assert.ok(sw.includes(`'./${asset}'`), `sw.js is missing ${asset}`);
 }
 
-assert.match(index, /value="sway">左右に傾く</);
-assert.match(index, /value="breathe">呼吸する</);
-assert.match(index, /value="zoom">ゆっくり拡大して戻る</);
-assert.match(index, /value="pendulum">振り子</);
-assert.match(index, /value="squash">伸縮</);
+const presetControl = index.match(/<div class="control control-wide">[\s\S]*?id="presetHelp"[\s\S]*?<\/div>/)?.[0] || '';
+assert.match(index, /id="presetButton"/);
+assert.match(presetControl, /ふわふわ上下/);
+assert.match(index, /id="openPreviewButton"/);
+assert.match(index, /プレビューを別タブで開く/);
+assert.doesNotMatch(index, /<select id="preset">/);
 assert.doesNotMatch(index, /プレビュー速度/);
+
+const presetLabels = ['ふわふわ上下', '呼吸', 'ゆっくり拡大', '左右に傾く', '振り子', '円運動', 'ジャンプ', '弾む伸縮', '細かく揺れる'];
+let previousPresetPosition = -1;
+for (const label of presetLabels) {
+  const position = appMain.indexOf(`label: '${label}'`);
+  assert.ok(position > previousPresetPosition, `preset order is incorrect for ${label}`);
+  previousPresetPosition = position;
+}
 assert.match(index, /動きの速さ/);
 assert.match(index, /アニメーション内の動作回数/);
 assert.match(index, /動きの速さはプレビューとアニメーションの再生速度に反映/);
@@ -107,6 +116,10 @@ assert.match(index, /value="webp">アニメーションWebP</);
 assert.match(index, /id="webpQuality"/);
 assert.match(index, /rel="noopener noreferrer"/);
 assert.match(appMain, /URL\.revokeObjectURL\(gifPreviewObjectUrl\)/);
+assert.match(appMain, /createCenteredPreviewUrls/);
+assert.match(appMain, /openCurrentPreviewInNewTab/);
+assert.match(appMain, /place-items: center/);
+assert.match(appMain, /URL\.revokeObjectURL\(currentPreviewObjectUrl\)/);
 assert.match(appMain, /lastGeneratedGifSettings/);
 assert.match(appMain, /regenerateGifButton/);
 assert.match(appMain, /ImageMotionGifRetimer/);
@@ -117,8 +130,10 @@ assert.match(appExport, /regenerateGifWithSpeed/);
 assert.match(appExport, /gifRetimer\.retimeGif/);
 assert.match(appExport, /loadGifForRetiming/);
 assert.match(appEvents, /elements\.regenerateGifButton\.addEventListener/);
+assert.match(appEvents, /elements\.openPreviewButton\.addEventListener/);
 assert.match(appEvents, /elements\.gifRetimeInput\.addEventListener/);
 assert.match(appEvents, /elements\.retimeGifButton\.addEventListener/);
+assert.match(appImage, /openPreviewButton/);
 assert.match(appCore, /gifFrameDelay/);
 assert.match(appCore, /estimateApng/);
 assert.match(appCore, /estimateWebp/);
