@@ -53,8 +53,8 @@ assert.doesNotMatch(sw, /cache\.put\(/);
 assert.equal(manifest.start_url, './');
 assert.equal(manifest.scope, './');
 
-assert.match(index, /application-version" content="20"/);
-assert.match(index, /Build 20/);
+assert.match(index, /application-version" content="21"/);
+assert.match(index, /Build 21/);
 assert.match(index, /app-core\.js\?v=6/);
 assert.match(index, /motion-model\.js\?v=7/);
 assert.match(index, /gif-retimer\.js\?v=1/);
@@ -63,16 +63,17 @@ assert.match(index, /webp-encoder\.js\?v=2/);
 assert.match(index, /app\.js\?v=17/);
 assert.match(index, /gif-encoder\.js\?v=5/);
 assert.match(index, /app-image\.js\?v=5/);
-assert.match(index, /app-export\.js\?v=11/);
-assert.match(index, /app-events\.js\?v=17/);
+assert.match(index, /app-export\.js\?v=12/);
+assert.match(index, /app-events\.js\?v=18/);
 assert.match(appExport, /gif-worker\.js\?v=5/);
 assert.match(appExport, /ImageMotionApng/);
 assert.match(appExport, /APNGの出力検査に失敗しました/);
+assert.match(appExport, /ダウンロード後も静止画として表示されます/);
 assert.match(appExport, /ImageMotionWebp/);
-assert.match(appEvents, /sw\.js\?v=20/);
+assert.match(appEvents, /sw\.js\?v=21/);
 assert.match(appEvents, /updateViaCache: 'none'/);
 assert.match(worker, /gif-encoder\.js\?v=5/);
-assert.match(sw, /image-motion-tool-v20/);
+assert.match(sw, /image-motion-tool-v21/);
 assert.match(pagesWorkflow, /persist-credentials: false/);
 assert.match(pagesWorkflow, /actions\/setup-node@v5/);
 assert.match(pagesWorkflow, /node-version: 24/);
@@ -84,7 +85,8 @@ assert.match(encoder, /colors\.length - 1/);
 assert.match(encoder, /palette box must contain colors/);
 assert.doesNotMatch(appExport, /dither: 'error-diffusion'/);
 assert.match(index, /app\.css\?v=6/);
-for (const asset of ['app.css?v=6', 'app-core.js?v=6', 'motion-model.js?v=7', 'gif-retimer.js?v=1', 'apng-encoder.js?v=2', 'webp-encoder.js?v=2', 'app.js?v=17', 'app-image.js?v=5', 'app-export.js?v=11', 'app-events.js?v=17', 'preview-page.js?v=2', 'preview-page.css?v=1', 'gif-encoder.js?v=5', 'gif-worker.js?v=5']) {
+assert.match(index, /id="apngCompatibilityHelp"/);
+for (const asset of ['app.css?v=6', 'app-core.js?v=6', 'motion-model.js?v=7', 'gif-retimer.js?v=1', 'apng-encoder.js?v=2', 'webp-encoder.js?v=2', 'app.js?v=17', 'app-image.js?v=5', 'app-export.js?v=12', 'app-events.js?v=18', 'preview-page.js?v=2', 'preview-page.css?v=1', 'gif-encoder.js?v=5', 'gif-worker.js?v=5']) {
   assert.ok(sw.includes(`'./${asset}'`), `sw.js is missing ${asset}`);
 }
 
