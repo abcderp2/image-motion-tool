@@ -173,6 +173,10 @@ function escapeHtmlAttribute(value) {
   return String(value).replace(/[&<>"']/g, (character) => replacements[character]);
 }
 
+function previewPageStylesheetUrl() {
+  return escapeHtmlAttribute(new URL('preview-page.css?v=1', window.location.href).href);
+}
+
 function createCenteredPreviewUrls(blob, title, alt) {
   if (!(blob instanceof Blob)) throw new Error('プレビューを作成できませんでした。');
   const mediaObjectUrl = URL.createObjectURL(blob);
@@ -186,39 +190,14 @@ function createCenteredPreviewUrls(blob, title, alt) {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="referrer" content="no-referrer">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; img-src blob:; style-src 'unsafe-inline'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; img-src blob:; style-src 'self'">
   <title>${safeTitle}</title>
-  <style>
-    :root { color-scheme: light; background: #f6f8fc; }
-    * { box-sizing: border-box; }
-    html { min-height: 100%; background: #f6f8fc; }
-    body {
-      display: grid;
-      place-items: center;
-      min-width: 280px;
-      min-height: 100vh;
-      min-height: 100dvh;
-      margin: 0;
-      padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
-      background: #f6f8fc;
-      overflow: auto;
-    }
-    img {
-      display: block;
-      width: auto;
-      height: auto;
-      max-width: 100%;
-      max-height: calc(100vh - 2rem);
-      max-height: calc(100dvh - 2rem);
-      object-fit: contain;
-      border-radius: 10px;
-      background: #ffffff;
-      box-shadow: 0 4px 18px rgba(23, 32, 51, 0.18);
-    }
-  </style>
+  <link rel="stylesheet" href="${previewPageStylesheetUrl()}">
 </head>
 <body>
-  <img src="${safeMediaUrl}" alt="${safeAlt}">
+  <main class="preview-stage">
+    <img class="preview-media" src="${safeMediaUrl}" alt="${safeAlt}">
+  </main>
 </body>
 </html>`;
     const pageObjectUrl = URL.createObjectURL(new Blob([documentText], { type: 'text/html' }));
@@ -243,49 +222,9 @@ function createLivePreviewUrl(sourceUrl) {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="referrer" content="no-referrer">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; connect-src 'none'; form-action 'none'; frame-src 'none'; img-src blob:; object-src 'none'; script-src 'self'; style-src 'unsafe-inline'; worker-src 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; connect-src 'none'; form-action 'none'; frame-src 'none'; img-src blob:; object-src 'none'; script-src 'self'; style-src 'self'; worker-src 'none'">
   <title>画像モーションツールの動くプレビュー</title>
-  <style>
-    :root { color-scheme: light; background: #f6f8fc; }
-    * { box-sizing: border-box; }
-    html, body { width: 100%; min-width: 280px; min-height: 100%; margin: 0; background: #f6f8fc; }
-    body {
-      min-height: 100vh;
-      min-height: 100svh;
-      min-height: 100dvh;
-      overflow: hidden;
-    }
-    .preview-stage {
-      position: fixed;
-      inset: 0;
-      display: grid;
-      place-items: center;
-      width: 100%;
-      height: 100%;
-      min-height: 100vh;
-      min-height: 100svh;
-      min-height: 100dvh;
-      padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
-      overflow: auto;
-    }
-    canvas {
-      display: block;
-      width: auto;
-      height: auto;
-      max-width: 100%;
-      max-height: 100%;
-      margin: auto;
-      border-radius: 10px;
-      background: #ffffff;
-      box-shadow: 0 4px 18px rgba(23, 32, 51, 0.18);
-    }
-    .preview-message {
-      margin: auto;
-      color: #536174;
-      font: 1rem/1.6 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      text-align: center;
-    }
-  </style>
+  <link rel="stylesheet" href="${previewPageStylesheetUrl()}">
 </head>
 <body>
   <main class="preview-stage">
