@@ -229,6 +229,88 @@ function createCenteredPreviewUrls(blob, title, alt) {
   }
 }
 
+function createLivePreviewUrl(sourceUrl) {
+  if (typeof sourceUrl !== 'string' || !sourceUrl.startsWith('blob:') || sourceUrl.length > 2048) {
+    throw new Error('別タブ用プレビューの画像URLを確認できませんでした。');
+  }
+
+  const safeSettings = core.sanitizeSettings(settings);
+  const pageObjectUrl = URL.createObjectURL(new Blob([`<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; connect-src 'none'; form-action 'none'; frame-src 'none'; img-src blob:; object-src 'none'; script-src 'self'; style-src 'unsafe-inline'; worker-src 'none'">
+  <title>画像モーションツールの動くプレビュー</title>
+  <style>
+    :root { color-scheme: light; background: #f6f8fc; }
+    * { box-sizing: border-box; }
+    html, body { width: 100%; min-width: 280px; min-height: 100%; margin: 0; background: #f6f8fc; }
+    body {
+      min-height: 100vh;
+      min-height: 100svh;
+      min-height: 100dvh;
+      overflow: hidden;
+    }
+    .preview-stage {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      width: 100%;
+      height: 100%;
+      min-height: 100vh;
+      min-height: 100svh;
+      min-height: 100dvh;
+      padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+      overflow: auto;
+    }
+    canvas {
+      display: block;
+      width: auto;
+      height: auto;
+      max-width: 100%;
+      max-height: 100%;
+      margin: auto;
+      border-radius: 10px;
+      background: #ffffff;
+      box-shadow: 0 4px 18px rgba(23, 32, 51, 0.18);
+    }
+    .preview-message {
+      margin: auto;
+      color: #536174;
+      font: 1rem/1.6 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <main class="preview-stage">
+    <canvas id="previewCanvas" aria-label="現在の動くプレビュー"></canvas>
+    <p id="previewMessage" class="preview-message" hidden></p>
+  </main>
+  <script src="${escapeHtmlAttribute(new URL('app-core.js?v=6', window.location.href).href)}" defer></script>
+  <script src="${escapeHtmlAttribute(new URL('motion-model.js?v=7', window.location.href).href)}" defer></script>
+  <script src="${escapeHtmlAttribute(new URL('preview-page.js?v=1', window.location.href).href)}" defer></script>
+</body>
+</html>`], { type: 'text/html' }));
+
+  try {
+    const query = new URLSearchParams({
+      source: sourceUrl,
+      settings: JSON.stringify(safeSettings),
+    });
+    return {
+      pageObjectUrl,
+      previewUrl: `${pageObjectUrl}?${query.toString()}`,
+    };
+  } catch (error) {
+    URL.revokeObjectURL(pageObjectUrl);
+    throw error;
+  }
+}
+
 function clearGifPreview() {
   if (gifPreviewObjectUrl) URL.revokeObjectURL(gifPreviewObjectUrl);
   if (gifPreviewMediaObjectUrl) URL.revokeObjectURL(gifPreviewMediaObjectUrl);
@@ -529,62 +611,7 @@ function render(now) {
   animationFrame = requestAnimationFrame(render);
 }
 
-async function createAnimatedPreviewBlob() {
-  const previewSettings = core.sanitizeSettings({
-    ...settings,
-    gifSize: 360,
-    duration: 2,
-    fps: Math.min(settings.fps, 10),
-    gifQuality: 'fast',
-    animationFormat: 'gif',
-  });
-  const dimensions = core.ratioDimensions(previewSettings.gifSize, previewSettings.canvasRatio);
-  const canvas = document.createElement('canvas');
-  canvas.width = dimensions.width;
-  canvas.height = dimensions.height;
-  const exportContext = canvas.getContext('2d', { alpha: true, willReadFrequently: true });
-  if (!exportContext) throw new Error('別タブ用プレビューの描画領域を作成できませんでした。');
-
-  const transparent = settings.backgroundMode === 'transparent';
-  const palette = gifApi.fixedPalette();
-  const lookup = gifApi.createPaletteLookup(palette, { transparent });
-  const frames = [];
-  let prepared = null;
-  try {
-    prepared = prepareSourceForOutput(dimensions.width, dimensions.height);
-    for (let index = 0; index < previewSettings.duration * previewSettings.fps; index += 1) {
-      drawFrame(exportContext, dimensions.width, dimensions.height, index / previewSettings.fps, {
-        source: prepared,
-        forExport: true,
-      });
-      const rgba = exportContext.getImageData(0, 0, dimensions.width, dimensions.height).data;
-      frames.push(gifApi.rgbaToIndexed(rgba, {
-        transparent,
-        palette,
-        lookup,
-        width: dimensions.width,
-        dither: 'none',
-        ditherStrength: 0,
-      }));
-      if (index % 2 === 1) await new Promise((resolve) => setTimeout(resolve, 0));
-    }
-    const encoded = gifApi.encodeIndexedFrames({
-      width: dimensions.width,
-      height: dimensions.height,
-      delay: core.gifFrameDelay(previewSettings),
-      transparent,
-      palette,
-      frames,
-    });
-    return new Blob([encoded], { type: 'image/gif' });
-  } finally {
-    frames.length = 0;
-    if (prepared !== image) releaseCanvas(prepared);
-    releaseCanvas(canvas);
-  }
-}
-
-async function openCurrentPreviewInNewTab() {
+function openCurrentPreviewInNewTab() {
   if (!image) {
     setStatus('先に画像を選んでください。');
     return;
@@ -599,13 +626,10 @@ async function openCurrentPreviewInNewTab() {
 
   try {
     previewWindow.opener = null;
-    setStatus('別タブ用の動くプレビューを作成しています。');
-    const blob = await createAnimatedPreviewBlob();
     clearCurrentPreview();
-    const previewUrls = createCenteredPreviewUrls(blob, '画像モーションツールの動くプレビュー', '現在の動くプレビュー');
+    const previewUrls = createLivePreviewUrl(imageObjectUrl);
     currentPreviewObjectUrl = previewUrls.pageObjectUrl;
-    currentPreviewMediaObjectUrl = previewUrls.mediaObjectUrl;
-    previewWindow.location.replace(currentPreviewObjectUrl);
+    previewWindow.location.replace(previewUrls.previewUrl);
     setStatus('現在の動くプレビューを別タブで開きました。');
   } catch (error) {
     if (!previewWindow.closed) previewWindow.close();
