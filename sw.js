@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'image-motion-tool-v13';
+const CACHE_NAME = 'image-motion-tool-v14';
 const APP_SHELL = Object.freeze([
   './',
   './index.html',
@@ -10,10 +10,10 @@ const APP_SHELL = Object.freeze([
   './gif-retimer.js?v=1',
   './apng-encoder.js?v=1',
   './webp-encoder.js?v=2',
-  './app.js?v=11',
+  './app.js?v=12',
   './app-image.js?v=5',
   './app-export.js?v=10',
-  './app-events.js?v=11',
+  './app-events.js?v=12',
   './gif-encoder.js?v=5',
   './gif-worker.js?v=5',
   './manifest.webmanifest',
