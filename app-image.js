@@ -30,6 +30,7 @@ async function loadImageFile(file) {
     throw new Error('画像ヘッダーと読み込み結果が一致しないため、安全のため中止しました。');
   }
 
+  clearCurrentPreview();
   if (imageObjectUrl) URL.revokeObjectURL(imageObjectUrl);
   imageObjectUrl = objectUrl;
   image = candidate;
@@ -41,6 +42,7 @@ async function loadImageFile(file) {
   lastCommittedSettings = { ...settings };
   saveSettings();
   elements.removeImageButton.disabled = false;
+  elements.openPreviewButton.disabled = false;
   drawPreviewNow();
   const typeLabel = metadata.type === 'image/jpeg' ? 'JPEG' : metadata.type.split('/')[1].toUpperCase();
   setStatus(`${candidate.naturalWidth}×${candidate.naturalHeight}pxの${typeLabel}を読み込みました。保存画像から位置情報などのメタデータは引き継ぎません。`);
@@ -53,8 +55,10 @@ function clearImage() {
   imageMetadata = null;
   lastGeneratedGifSettings = null;
   clearGifPreview();
+  clearCurrentPreview();
   elements.imageInput.value = '';
   elements.removeImageButton.disabled = true;
+  elements.openPreviewButton.disabled = true;
   drawPreviewNow();
   setStatus('画像を端末の作業領域から外しました。設定値だけが残っています。');
 }
@@ -138,6 +142,8 @@ function setExportUi(active) {
     elements.undoButton,
     elements.redoButton,
     elements.resetButton,
+    elements.presetButton,
+    elements.openPreviewButton,
     elements.exportSettingsButton,
   ]) element.disabled = active;
   elements.cancelExportButton.hidden = !active;
@@ -146,6 +152,7 @@ function setExportUi(active) {
     elements.stillQuality.disabled = settings.stillFormat === 'png';
     updateAnimationFormatUi();
     elements.removeImageButton.disabled = !image;
+    elements.openPreviewButton.disabled = !image;
     updateHistoryButtons();
     elements.progress.value = 0;
   }
