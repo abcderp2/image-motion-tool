@@ -1,3 +1,4 @@
+# branch-only bootstrap
 name: Apply maintenance patch
 
 on:
