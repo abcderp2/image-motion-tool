@@ -71,7 +71,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -- index.html app.js app-export.js app-events.js sw.js README.md scripts/check_static.mjs scripts/test_service_worker.mjs .github/workflows/live-site-check.yml .github/workflows/pages.yml
+          git add -- index.html app.js app-export.js app-events.js sw.js README.md scripts/check_static.mjs scripts/test_service_worker.mjs
           git add -u -- scripts/apply_build22_patch.py
           git diff --cached --check
           git commit -m "fix: 説明を静的ソースへ統合する"
