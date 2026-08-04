@@ -56,7 +56,7 @@ listeners.get('activate')({
   },
 });
 await activation;
-assert.deepEqual(deletedCaches, ['image-motion-tool-v20']);
+assert.deepEqual(deletedCaches, ['image-motion-tool-v20', 'image-motion-tool-v21']);
 
 let navigationResponse;
 listeners.get('fetch')({

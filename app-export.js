@@ -299,7 +299,7 @@ async function exportAnimatedWebp() {
     lastGeneratedGifSettings = null;
     setGifPreview(blob, 'webp');
     downloadBlob(blob, `image-motion-${fileTimestamp()}.webp`);
-    setStatus(`アニメーションWebPを保存しました。${roundedDelayMessage(settings, estimate.frameDelay)}Canvas標準のWebP非可逆圧縮を使用しています。`);
+    setStatus(`アニメーションWebPを保存しました。${roundedDelayMessage(settings, estimate.frameDelay)}CanvasのWebP出力を使用しています。端末や表示アプリによって再生できない場合はGIFまたはAPNGを使用してください。`);
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') setStatus('アニメーションWebP生成を中止しました。');
     else setStatus(error instanceof Error ? error.message : 'アニメーションWebPを生成できませんでした。');
@@ -355,7 +355,7 @@ async function exportGif() {
     lastGeneratedGifSettings = core.sanitizeSettings(settings);
     setGifPreview(gifBlob, 'gif');
     downloadBlob(gifBlob, `image-motion-${fileTimestamp()}.gif`);
-    setStatus('GIFを保存しました。別タブで元のGIFを開き、拡大して確認できます。');
+    setStatus('GIFを保存しました。別タブで保存したGIFを開き、拡大して確認できます。');
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') setStatus('GIF生成を中止しました。');
     else setStatus(error instanceof Error ? error.message : 'GIFを生成できませんでした。');
