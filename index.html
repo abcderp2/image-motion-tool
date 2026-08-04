@@ -122,7 +122,7 @@
             <label class="control" for="webpQuality"><span>WebP画質 <output id="webpQualityValue" for="webpQuality"></output></span><input id="webpQuality" type="range" min="0.6" max="1" step="0.02"></label>
           </div>
           <p id="gifEstimate" class="estimate"></p>
-          <p class="help-text">動きの速さを上げると、アニメーションの再生時間は短くなります。GIFの高画質では色を細かく分析し、細かな粒状の補正は使いません。APNGはフルカラーと透過を保ちます。アニメーションWebPはCanvas標準の非可逆WebPを指定画質で使います。性能が控えめな端末では、小さいサイズ、短い長さ、低いfpsから試してください。</p>
+          <p class="help-text">動きの速さを上げると、アニメーションの再生時間は短くなります。GIFの高画質では色を細かく分析し、細かな粒状の補正は使いません。APNGはフルカラーと透過を保ちます。アニメーションWebPはCanvas標準の非可逆WebPを指定画質で使います。端末、OS、ブラウザの組み合わせによっては、アニメーションWebPを正常に生成または再生できない場合があります。その場合はGIFまたはAPNGを選んでください。性能が控えめな端末では、小さいサイズ、短い長さ、低いfpsから試してください。</p>
           <p id="apngCompatibilityHelp" class="help-text">APNGを選んだ場合、対応ブラウザでは動きますが、端末の写真アプリやファイルアプリがAPNGの再生に対応していないと、ダウンロード後も静止画として表示されます。これはファイルの破損ではなく、表示側の仕様です。写真アプリでの再生を優先する場合は、使用するアプリが対応する形式を選んでください。</p>
           <button id="exportGifButton" class="primary-button" type="button">GIFを保存</button>
           <div class="button-row history-actions">
