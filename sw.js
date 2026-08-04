@@ -1,7 +1,7 @@
 'use strict';
 
 const CACHE_PREFIX = 'image-motion-tool-v';
-const CACHE_NAME = `${CACHE_PREFIX}21`;
+const CACHE_NAME = 'image-motion-tool-v21';
 const APP_SHELL = Object.freeze([
   './',
   './index.html',
