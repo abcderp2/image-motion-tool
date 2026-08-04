@@ -24,7 +24,7 @@ const context = {
   },
   caches: {
     async keys() {
-      return ['image-motion-tool-v20', 'image-motion-tool-v22', 'another-tool-v4'];
+      return ['image-motion-tool-v20', 'image-motion-tool-v21', 'another-tool-v4'];
     },
     async delete(key) {
       deletedCaches.push(key);
@@ -63,7 +63,7 @@ listeners.get('fetch')({
   request: {
     method: 'GET',
     mode: 'navigate',
-    url: `${ownScope}?build=22-check`,
+    url: `${ownScope}?build=21-check`,
   },
   respondWith(promise) {
     navigationResponse = promise;
