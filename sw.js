@@ -1,5 +1,6 @@
 'use strict';
 
+const CACHE_PREFIX = 'image-motion-tool-v';
 const CACHE_NAME = 'image-motion-tool-v21';
 const APP_SHELL = Object.freeze([
   './',
@@ -27,6 +28,13 @@ const NAVIGATION_URLS = new Set([
   new URL('./index.html', self.registration.scope).href,
 ]);
 
+function normalizedNavigationUrl(url) {
+  const normalized = new URL(url.href);
+  normalized.search = '';
+  normalized.hash = '';
+  return normalized.href;
+}
+
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(
     APP_SHELL.map((path) => new Request(path, { cache: 'reload' })),
@@ -37,7 +45,9 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => Promise.all(
-      keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)),
+      keys
+        .filter((key) => key.startsWith(CACHE_PREFIX) && key !== CACHE_NAME)
+        .map((key) => caches.delete(key)),
     )),
   );
   self.clients.claim();
@@ -46,12 +56,18 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   const requestUrl = new URL(event.request.url);
-  if (requestUrl.origin !== self.location.origin || !ALLOWED_URLS.has(requestUrl.href)) return;
+  if (requestUrl.origin !== self.location.origin) return;
 
-  if (event.request.mode === 'navigate' || NAVIGATION_URLS.has(requestUrl.href)) {
-    event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
+  const isNavigation = event.request.mode === 'navigate'
+    && NAVIGATION_URLS.has(normalizedNavigationUrl(requestUrl));
+  if (isNavigation) {
+    event.respondWith(fetch(event.request).catch(async () => (
+      (await caches.match(new URL('./index.html', self.registration.scope).href))
+      || caches.match(new URL('./', self.registration.scope).href)
+    )));
     return;
   }
 
+  if (!ALLOWED_URLS.has(requestUrl.href)) return;
   event.respondWith(caches.match(event.request).then((cached) => cached || fetch(event.request)));
 });

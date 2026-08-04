@@ -51,6 +51,7 @@ jobs:
           node scripts/test_webp_encoder.mjs
           node scripts/test_gif_disposal.mjs
           node --max-old-space-size=64 scripts/test_gif_dominant_color.mjs
+          node scripts/test_service_worker.mjs
           node scripts/check_static.mjs
 
       - name: Configure GitHub Pages
