@@ -53,7 +53,8 @@ setGifPreview = function setCompatibleGifPreview(blob, format = 'gif') {
 };
 
 function updateCompatibilityGuidance() {
-  const animationHelp = document.querySelector('#gifEstimate + .help-text');
+  const estimate = document.querySelector('#gifEstimate');
+  const animationHelp = estimate?.nextElementSibling;
   if (animationHelp) {
     animationHelp.textContent = '動きの速さを上げると、アニメーションの再生時間は短くなります。GIFの高画質では色を細かく分析し、細かな粒状の補正は使いません。APNGはフルカラーと透過を保ちます。アニメーションWebPはCanvasのWebP出力を指定画質で使います。端末、OS、ブラウザ、表示アプリの組み合わせによっては正常に生成または再生できない場合があります。その場合はGIFまたはAPNGを選んでください。性能が控えめな端末では、小さいサイズ、短い長さ、低いfpsから試してください。';
   }
