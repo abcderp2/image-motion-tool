@@ -8,7 +8,7 @@
   <meta name="description" content="画像を端末内だけで動かし、GIF、APNG、アニメーションWebP、PNG、JPEG、WebPへ保存できる無料ツールです。">
   <meta name="theme-color" content="#f6f8fc">
   <meta name="color-scheme" content="light">
-  <meta name="application-version" content="21">
+  <meta name="application-version" content="22">
   <link rel="canonical" href="https://abcderp2.github.io/image-motion-tool/">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -20,10 +20,10 @@
   <script src="gif-retimer.js?v=1" defer></script>
   <script src="apng-encoder.js?v=2" defer></script>
   <script src="webp-encoder.js?v=2" defer></script>
-  <script src="app.js?v=17" defer></script>
+  <script src="app.js?v=18" defer></script>
   <script src="app-image.js?v=5" defer></script>
-  <script src="app-export.js?v=12" defer></script>
-  <script src="app-events.js?v=18" defer></script>
+  <script src="app-export.js?v=13" defer></script>
+  <script src="app-events.js?v=19" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">操作画面へ移動</a>
@@ -122,14 +122,14 @@
             <label class="control" for="webpQuality"><span>WebP画質 <output id="webpQualityValue" for="webpQuality"></output></span><input id="webpQuality" type="range" min="0.6" max="1" step="0.02"></label>
           </div>
           <p id="gifEstimate" class="estimate"></p>
-          <p class="help-text">動きの速さを上げると、アニメーションの再生時間は短くなります。GIFの高画質では色を細かく分析し、細かな粒状の補正は使いません。APNGはフルカラーと透過を保ちます。アニメーションWebPはCanvas標準の非可逆WebPを指定画質で使います。端末、OS、ブラウザの組み合わせによっては、アニメーションWebPを正常に生成または再生できない場合があります。その場合はGIFまたはAPNGを選んでください。性能が控えめな端末では、小さいサイズ、短い長さ、低いfpsから試してください。</p>
-          <p id="apngCompatibilityHelp" class="help-text">APNGを選んだ場合、対応ブラウザでは動きますが、端末の写真アプリやファイルアプリがAPNGの再生に対応していないと、ダウンロード後も静止画として表示されます。これはファイルの破損ではなく、表示側の仕様です。写真アプリでの再生を優先する場合は、使用するアプリが対応する形式を選んでください。</p>
+          <p class="help-text">動きの速さを上げると、アニメーションの再生時間は短くなります。GIFの高画質では色を細かく分析し、細かな粒状の補正は使いません。APNGはフルカラーと透過を保ちます。アニメーションWebPはCanvasのWebP出力を指定画質で使います。端末、OS、ブラウザ、表示アプリの組み合わせによっては正常に生成または再生できない場合があります。その場合はGIFまたはAPNGを選んでください。性能が控えめな端末では、小さいサイズ、短い長さ、低いfpsから試してください。</p>
+          <p id="apngCompatibilityHelp" class="help-text">APNGを選んだ場合、対応ブラウザでは動きますが、写真アプリやファイルアプリがAPNG再生に対応していないと静止画として表示されます。動かない場合もファイル破損とは限りません。APNG対応ブラウザまたはアプリで確認してください。</p>
           <button id="exportGifButton" class="primary-button" type="button">GIFを保存</button>
           <div class="button-row history-actions">
             <a id="openGifPreviewLink" class="file-button secondary-file-button" target="_blank" rel="noopener noreferrer" aria-describedby="gifPreviewHelp" hidden>保存したアニメーションを別タブで開く</a>
             <button id="regenerateGifButton" class="secondary-button" type="button" hidden>速度を変えて再生成</button>
           </div>
-          <p id="gifPreviewHelp" class="help-text" hidden>生成したファイルそのものを別タブで表示します。APNGを保存しても、端末やアプリがAPNGの再生に対応していない場合は、ダウンロード後も静止画として表示されます。対応ブラウザで動きを確認し、写真アプリで再生する場合は、そのアプリが対応する形式を選んでください。一時URLは次の生成時またはページを閉じたときに破棄します。</p>
+          <p id="gifPreviewHelp" class="help-text" hidden>生成したファイルそのものを別タブで表示します。動かない場合もファイル破損とは限りません。保存形式に対応したブラウザまたはアプリで確認してください。一時URLは次の生成時またはページを閉じたときに破棄します。</p>
           <p id="regenerateGifHelp" class="help-text" hidden>最後に生成した設定を使い、現在の速度だけに変えて再生成します。生成済みGIFそのものは編集しません。</p>
           <div class="gif-retime-box">
             <p class="subheading">生成済みGIFの速度変更</p>
@@ -188,7 +188,7 @@
     </section>
   </main>
 
-  <footer class="site-footer"><div class="page-width"><p>画像モーションツール Build 21</p><p>外部送信なし、外部ライブラリなし、追加課金なし</p><p>検索エンジンやAIによる公開ページの訪問、利用者の指示による取得、要約、引用を歓迎します。<a href="ai.txt">AI向け公開方針</a></p></div></footer>
+  <footer class="site-footer"><div class="page-width"><p>画像モーションツール Build 22</p><p>外部送信なし、外部ライブラリなし、追加課金なし</p><p>検索エンジンやAIによる公開ページの訪問、利用者の指示による取得、要約、引用を歓迎します。<a href="ai.txt">AI向け公開方針</a></p></div></footer>
   <noscript><p class="noscript-message">このツールを使うにはJavaScriptを有効にしてください。</p></noscript>
 </body>
 </html>

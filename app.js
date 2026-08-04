@@ -267,9 +267,9 @@ function setGifPreview(blob, format = 'gif') {
   const formatLabel = format === 'apng' ? 'APNG' : format === 'webp' ? 'アニメーションWebP' : 'GIF';
   elements.openGifPreviewLink.textContent = `保存した${formatLabel}を別タブで開く`;
   elements.gifPreviewHelp.textContent = format === 'apng'
-    ? '生成したAPNGそのものを別タブで表示します。APNGのアニメーション表示はブラウザにより異なるため、表示できない場合も保存ファイルは利用できます。一時URLは次の生成時またはページを閉じた時に破棄します。'
+    ? '生成したAPNGそのものを別タブで表示します。動かない場合もファイル破損とは限りません。APNG対応ブラウザまたはアプリで確認してください。一時URLは次の生成時またはページを閉じた時に破棄します。'
     : format === 'webp'
-      ? '生成したアニメーションWebPそのものを別タブで表示します。ブラウザの対応状況により表示できない場合も保存ファイルは利用できます。一時URLは次の生成時またはページを閉じた時に破棄します。'
+      ? '生成したアニメーションWebPそのものを別タブで表示します。動かない場合もファイル破損とは限りません。アニメーションWebP対応ブラウザまたはアプリで確認してください。一時URLは次の生成時またはページを閉じた時に破棄します。'
       : '生成したGIFそのものを別タブで表示します。ブラウザのピンチ操作や拡大機能で確認できます。一時URLは次の生成時またはページを閉じた時に破棄します。';
   elements.openGifPreviewLink.hidden = false;
   elements.gifPreviewHelp.hidden = false;

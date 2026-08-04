@@ -5,8 +5,8 @@ import { constants } from 'node:fs';
 const requiredFiles = [
   'index.html', 'app.css', 'app-core.js', 'motion-model.js', 'gif-retimer.js', 'apng-encoder.js', 'webp-encoder.js', 'app.js', 'app-image.js', 'app-export.js', 'app-events.js', 'gif-encoder.js', 'gif-worker.js',
   'sw.js', 'preview-page.js', 'preview-page.css', 'manifest.webmanifest', 'icon.svg', 'robots.txt', 'ai.txt', 'sitemap.xml', 'README.md', 'SECURITY.md', 'MAINTENANCE.md',
-  'scripts/test_app_core.mjs', 'scripts/test_motion_model.mjs', 'scripts/test_gif_encoder.mjs', 'scripts/test_gif_retimer.mjs', 'scripts/test_apng_encoder.mjs', 'scripts/test_webp_encoder.mjs', 'scripts/test_gif_disposal.mjs', 'scripts/test_gif_dominant_color.mjs',
-  '.github/workflows/pages.yml',
+  'scripts/test_app_core.mjs', 'scripts/test_motion_model.mjs', 'scripts/test_gif_encoder.mjs', 'scripts/test_gif_retimer.mjs', 'scripts/test_apng_encoder.mjs', 'scripts/test_webp_encoder.mjs', 'scripts/test_gif_disposal.mjs', 'scripts/test_gif_dominant_color.mjs', 'scripts/test_service_worker.mjs',
+  '.github/workflows/pages.yml', '.github/workflows/live-site-check.yml',
 ];
 for (const file of requiredFiles) await access(new URL(`../${file}`, import.meta.url), constants.R_OK);
 
@@ -32,6 +32,8 @@ const ai = await readFile(new URL('ai.txt', root), 'utf8');
 const sitemap = await readFile(new URL('sitemap.xml', root), 'utf8');
 const manifest = JSON.parse(await readFile(new URL('manifest.webmanifest', root), 'utf8'));
 const pagesWorkflow = await readFile(new URL('.github/workflows/pages.yml', root), 'utf8');
+const liveWorkflow = await readFile(new URL('.github/workflows/live-site-check.yml', root), 'utf8');
+const serviceWorkerTest = await readFile(new URL('scripts/test_service_worker.mjs', root), 'utf8');
 
 assert.match(index, /Content-Security-Policy/);
 assert.match(index, /connect-src 'none'/);
@@ -53,31 +55,32 @@ assert.doesNotMatch(sw, /cache\.put\(/);
 assert.equal(manifest.start_url, './');
 assert.equal(manifest.scope, './');
 
-assert.match(index, /application-version" content="21"/);
-assert.match(index, /Build 21/);
+assert.match(index, /application-version" content="22"/);
+assert.match(index, /Build 22/);
 assert.match(index, /app-core\.js\?v=6/);
 assert.match(index, /motion-model\.js\?v=7/);
 assert.match(index, /gif-retimer\.js\?v=1/);
 assert.match(index, /apng-encoder\.js\?v=2/);
 assert.match(index, /webp-encoder\.js\?v=2/);
-assert.match(index, /app\.js\?v=17/);
+assert.match(index, /app\.js\?v=18/);
 assert.match(index, /gif-encoder\.js\?v=5/);
 assert.match(index, /app-image\.js\?v=5/);
-assert.match(index, /app-export\.js\?v=12/);
-assert.match(index, /app-events\.js\?v=18/);
+assert.match(index, /app-export\.js\?v=13/);
+assert.match(index, /app-events\.js\?v=19/);
 assert.match(appExport, /gif-worker\.js\?v=5/);
 assert.match(appExport, /ImageMotionApng/);
 assert.match(appExport, /APNGの出力検査に失敗しました/);
 assert.match(appExport, /ダウンロード後も静止画として表示されます/);
 assert.match(appExport, /ImageMotionWebp/);
-assert.match(appEvents, /sw\.js\?v=21/);
+assert.match(appEvents, /sw\.js\?v=22/);
 assert.match(appEvents, /updateViaCache: 'none'/);
 assert.match(worker, /gif-encoder\.js\?v=5/);
-assert.match(sw, /image-motion-tool-v21/);
+assert.match(sw, /image-motion-tool-v22/);
 assert.match(pagesWorkflow, /persist-credentials: false/);
 assert.match(pagesWorkflow, /actions\/setup-node@v5/);
 assert.match(pagesWorkflow, /node-version: 24/);
 assert.match(pagesWorkflow, /node --check app-core\.js/);
+assert.match(pagesWorkflow, /node scripts\/test_service_worker\.mjs/);
 assert.match(pagesWorkflow, /node scripts\/check_static\.mjs/);
 assert.match(pagesWorkflow, /permissions:\s+contents: read/);
 assert.match(encoder, /transparent \? 0x09 : 0x04/);
@@ -86,7 +89,23 @@ assert.match(encoder, /palette box must contain colors/);
 assert.doesNotMatch(appExport, /dither: 'error-diffusion'/);
 assert.match(index, /app\.css\?v=6/);
 assert.match(index, /id="apngCompatibilityHelp"/);
-for (const asset of ['app.css?v=6', 'app-core.js?v=6', 'motion-model.js?v=7', 'gif-retimer.js?v=1', 'apng-encoder.js?v=2', 'webp-encoder.js?v=2', 'app.js?v=17', 'app-image.js?v=5', 'app-export.js?v=12', 'app-events.js?v=18', 'preview-page.js?v=2', 'preview-page.css?v=1', 'gif-encoder.js?v=5', 'gif-worker.js?v=5']) {
+assert.match(index, /アニメーションWebPはCanvasのWebP出力/);
+assert.match(index, /動かない場合もファイル破損とは限りません/);
+assert.doesNotMatch(index, /Canvas標準の非可逆WebP/);
+assert.match(appExport, /CanvasのWebP出力を使用しています/);
+assert.match(appExport, /別タブで保存したGIFを開き/);
+assert.match(appMain, /動かない場合もファイル破損とは限りません/);
+assert.doesNotMatch(appEvents, /normalizeUserMessage|updateCompatibilityGuidance/);
+assert.match(sw, /CACHE_PREFIX/);
+assert.match(sw, /startsWith\(CACHE_PREFIX\)/);
+assert.match(sw, /normalizedNavigationUrl/);
+assert.match(serviceWorkerTest, /another-tool-v4/);
+assert.match(serviceWorkerTest, /build=21-check/);
+assert.match(liveWorkflow, /application_version/);
+assert.match(liveWorkflow, /same_site/);
+assert.match(liveWorkflow, /test_service_worker\.mjs/);
+assert.doesNotMatch(liveWorkflow, /Build 12|app\.js\?v=10|sw\.js\?v=12/);
+for (const asset of ['app.css?v=6', 'app-core.js?v=6', 'motion-model.js?v=7', 'gif-retimer.js?v=1', 'apng-encoder.js?v=2', 'webp-encoder.js?v=2', 'app.js?v=18', 'app-image.js?v=5', 'app-export.js?v=13', 'app-events.js?v=19', 'preview-page.js?v=2', 'preview-page.css?v=1', 'gif-encoder.js?v=5', 'gif-worker.js?v=5']) {
   assert.ok(sw.includes(`'./${asset}'`), `sw.js is missing ${asset}`);
 }
 

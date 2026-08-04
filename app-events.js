@@ -26,49 +26,6 @@ if (!supportsWebp) {
   }
 }
 
-const originalSetStatus = setStatus;
-function normalizeUserMessage(message) {
-  return String(message)
-    .replace(
-      'Canvas標準のWebP非可逆圧縮を使用しています。',
-      'CanvasのWebP出力を使用しています。端末や表示アプリによって再生できない場合はGIFまたはAPNGを使用してください。',
-    )
-    .replace(
-      '別タブで元のGIFを開き、',
-      '別タブで保存したGIFを開き、',
-    );
-}
-setStatus = function setNormalizedStatus(message) {
-  originalSetStatus(normalizeUserMessage(message));
-};
-
-const originalSetGifPreview = setGifPreview;
-setGifPreview = function setCompatibleGifPreview(blob, format = 'gif') {
-  originalSetGifPreview(blob, format);
-  if (format === 'apng') {
-    elements.gifPreviewHelp.textContent = '生成したAPNGそのものを別タブで表示します。動かない場合もファイル破損とは限りません。APNG対応ブラウザまたはアプリで確認してください。一時URLは次の生成時またはページを閉じた時に破棄します。';
-  } else if (format === 'webp') {
-    elements.gifPreviewHelp.textContent = '生成したアニメーションWebPそのものを別タブで表示します。動かない場合もファイル破損とは限りません。アニメーションWebP対応ブラウザまたはアプリで確認してください。一時URLは次の生成時またはページを閉じた時に破棄します。';
-  }
-};
-
-function updateCompatibilityGuidance() {
-  const estimate = document.querySelector('#gifEstimate');
-  const animationHelp = estimate?.nextElementSibling;
-  if (animationHelp) {
-    animationHelp.textContent = '動きの速さを上げると、アニメーションの再生時間は短くなります。GIFの高画質では色を細かく分析し、細かな粒状の補正は使いません。APNGはフルカラーと透過を保ちます。アニメーションWebPはCanvasのWebP出力を指定画質で使います。端末、OS、ブラウザ、表示アプリの組み合わせによっては正常に生成または再生できない場合があります。その場合はGIFまたはAPNGを選んでください。性能が控えめな端末では、小さいサイズ、短い長さ、低いfpsから試してください。';
-  }
-  const apngHelp = document.querySelector('#apngCompatibilityHelp');
-  if (apngHelp) {
-    apngHelp.textContent = 'APNGを選んだ場合、対応ブラウザでは動きますが、写真アプリやファイルアプリがAPNG再生に対応していないと静止画として表示されます。動かない場合もファイル破損とは限りません。APNG対応ブラウザまたはアプリで確認してください。';
-  }
-  const previewHelp = document.querySelector('#gifPreviewHelp');
-  if (previewHelp) {
-    previewHelp.textContent = '生成したファイルそのものを別タブで表示します。動かない場合もファイル破損とは限りません。保存形式に対応したブラウザまたはアプリで確認してください。一時URLは次の生成時またはページを閉じた時に破棄します。';
-  }
-}
-updateCompatibilityGuidance();
-
 elements.imageInput.addEventListener('change', async () => {
   const file = elements.imageInput.files?.[0];
   elements.imageInput.value = '';
@@ -220,7 +177,7 @@ window.addEventListener('pagehide', () => {
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   window.addEventListener('load', async () => {
     try {
-      const registration = await navigator.serviceWorker.register('sw.js?v=21', {
+      const registration = await navigator.serviceWorker.register('sw.js?v=22', {
         scope: './',
         updateViaCache: 'none',
       });

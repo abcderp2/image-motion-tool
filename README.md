@@ -6,7 +6,7 @@
 
 https://abcderp2.github.io/image-motion-tool/
 
-現在の公開版は画面下部にBuild 21と表示されます。
+現在の公開版は画面下部にBuild 22と表示されます。
 
 ## 特徴
 
@@ -132,7 +132,7 @@ GitHub ActionsではPull Requestとmain更新時に同じ検査を実行しま�
 - app.js 状態、描画、別タブ表示
 - app-image.js 画像検査、読み込み、静止画像保存
 - app-export.js GIF、APNG、アニメーションWebP、GIF速度変更
-- app-events.js 操作イベント、互換性案内、Service Worker登録
+- app-events.js 操作イベントとService Worker登録
 - gif-encoder.js、gif-worker.js GIF生成
 - gif-retimer.js GIF表示時間変更
 - apng-encoder.js APNG生成と検査
