@@ -41,6 +41,9 @@ jobs:
         run: |
           node --check app-core.js
           node --check motion-model.js
+          node --check partial-motion-mask.js
+          node --check partial-motion-render.js
+          node --check partial-motion-app.js
           node --check gif-retimer.js
           node --check apng-encoder.js
           node --check webp-encoder.js
@@ -53,6 +56,7 @@ jobs:
           node --check sw.js
           node scripts/test_app_core.mjs
           node scripts/test_motion_model.mjs
+          node scripts/test_partial_motion.mjs
           node --max-old-space-size=64 scripts/test_gif_encoder.mjs
           node scripts/test_gif_retimer.mjs
           node scripts/test_apng_encoder.mjs
@@ -64,4 +68,4 @@ jobs:
 
       - name: Reject unsafe or external runtime code
         run: |
-          ! grep -RInE 'https?://[^" ]+\.(js|css)(\?|"|$)|eval[[:space:]]*\(|new Function[[:space:]]*\(|\.innerHTML[[:space:]]*=' -- index.html app-core.js motion-model.js gif-retimer.js apng-encoder.js webp-encoder.js app.js app-image.js app-export.js app-events.js app.css gif-encoder.js gif-worker.js sw.js
+          ! grep -RInE 'https?://[^" ]+\.(js|css)(\?|"|$)|eval[[:space:]]*\(|new Function[[:space:]]*\(|\.innerHTML[[:space:]]*=' -- index.html app-core.js motion-model.js partial-motion-mask.js partial-motion-render.js partial-motion-app.js gif-retimer.js apng-encoder.js webp-encoder.js app.js app-image.js app-export.js app-events.js app.css gif-encoder.js gif-worker.js sw.js
