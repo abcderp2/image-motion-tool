@@ -6,6 +6,10 @@
     return Number.isFinite(number) ? number : fallback;
   }
 
+  function positiveNumber(value, fallback) {
+    return Math.max(1, finiteNumber(value, fallback));
+  }
+
   const SQUASH_KEYFRAMES = Object.freeze([
     0,
     0.3,
@@ -132,7 +136,90 @@
     return { x, y, rotation, scaleX, scaleY, pivotX, pivotY };
   }
 
-  const api = Object.freeze({ motionAt });
+  function staticGeometry(settings, sourceWidth, sourceHeight, width, height) {
+    const safe = settings && typeof settings === 'object' ? settings : {};
+    const safeSourceWidth = positiveNumber(sourceWidth, 1);
+    const safeSourceHeight = positiveNumber(sourceHeight, 1);
+    const safeWidth = positiveNumber(width, 1);
+    const safeHeight = positiveNumber(height, 1);
+    const fitScale = Math.min(safeWidth / safeSourceWidth, safeHeight / safeSourceHeight);
+    const zoom = Math.max(0.01, finiteNumber(safe.zoom, 100) / 100);
+    const drawWidth = safeSourceWidth * fitScale * zoom;
+    const drawHeight = safeSourceHeight * fitScale * zoom;
+    const positionScale = Math.max(safeWidth, safeHeight) / 360;
+    const centerX = safeWidth / 2 + finiteNumber(safe.offsetX, 0) * positionScale;
+    const centerY = safeHeight / 2 + finiteNumber(safe.offsetY, 0) * positionScale;
+
+    return {
+      centerX,
+      centerY,
+      drawWidth,
+      drawHeight,
+      left: centerX - drawWidth / 2,
+      top: centerY - drawHeight / 2,
+      flipped: Boolean(safe.flipped),
+    };
+  }
+
+  function frameGeometry(settings, sourceWidth, sourceHeight, width, height, motion) {
+    const base = staticGeometry(settings, sourceWidth, sourceHeight, width, height);
+    const safeMotion = motion && typeof motion === 'object' ? motion : {};
+    const pivotXRatio = finiteNumber(safeMotion.pivotX, 0.5);
+    const pivotYRatio = finiteNumber(safeMotion.pivotY, 0.5);
+    const drawWidth = base.drawWidth * finiteNumber(safeMotion.scaleX, 1);
+    const drawHeight = base.drawHeight * finiteNumber(safeMotion.scaleY, 1);
+    const positionScale = Math.max(positiveNumber(width, 1), positiveNumber(height, 1)) / 360;
+    const centerX = base.centerX + finiteNumber(safeMotion.x, 0) * positionScale;
+    const centerY = base.centerY + finiteNumber(safeMotion.y, 0) * positionScale;
+
+    return {
+      ...base,
+      centerX,
+      centerY,
+      drawWidth,
+      drawHeight,
+      pivotXRatio,
+      pivotYRatio,
+      pivotX: centerX + (pivotXRatio - 0.5) * base.drawWidth,
+      pivotY: centerY + (pivotYRatio - 0.5) * base.drawHeight,
+      rotation: finiteNumber(safeMotion.rotation, 0),
+    };
+  }
+
+  function sourcePointAt(settings, sourceWidth, sourceHeight, width, height, x, y) {
+    const geometry = staticGeometry(settings, sourceWidth, sourceHeight, width, height);
+    const safeX = finiteNumber(x, Number.NaN);
+    const safeY = finiteNumber(y, Number.NaN);
+    if (!Number.isFinite(safeX) || !Number.isFinite(safeY)) return null;
+    let unitX = (safeX - geometry.left) / geometry.drawWidth;
+    const unitY = (safeY - geometry.top) / geometry.drawHeight;
+    if (unitX < 0 || unitX > 1 || unitY < 0 || unitY > 1) return null;
+    if (geometry.flipped) unitX = 1 - unitX;
+    return { x: unitX, y: unitY, geometry };
+  }
+
+  function maskDimensions(sourceWidth, sourceHeight, maxLongEdge = 1024, maxPixels = 786432) {
+    const width = positiveNumber(sourceWidth, 1);
+    const height = positiveNumber(sourceHeight, 1);
+    const safeLongEdge = Math.max(64, finiteNumber(maxLongEdge, 1024));
+    const safeMaxPixels = Math.max(4096, finiteNumber(maxPixels, 786432));
+    const longScale = Math.min(1, safeLongEdge / Math.max(width, height));
+    const pixelScale = Math.min(1, Math.sqrt(safeMaxPixels / (width * height)));
+    const scale = Math.min(longScale, pixelScale);
+    return {
+      width: Math.max(1, Math.round(width * scale)),
+      height: Math.max(1, Math.round(height * scale)),
+      scale,
+    };
+  }
+
+  const api = Object.freeze({
+    motionAt,
+    staticGeometry,
+    frameGeometry,
+    sourcePointAt,
+    maskDimensions,
+  });
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   globalScope.ImageMotionModel = api;
 }(typeof self !== 'undefined' ? self : globalThis));

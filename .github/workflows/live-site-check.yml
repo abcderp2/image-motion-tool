@@ -130,16 +130,20 @@ jobs:
 
           files = {
               "app-core.js": ("SETTINGS_VERSION", "validateImageMetadata", "estimateApng", "estimateWebp"),
-              "motion-model.js": ("case 'sway'", "case 'pendulum'", "case 'squash'"),
+              "motion-model.js": ("case 'sway'", "case 'pendulum'", "case 'squash'", "maskDimensions"),
+              "partial-motion-mask.js": ("MAX_EDIT_STROKES", "featherCanvas", "ImageMotionPartialMask"),
+              "partial-motion-render.js": ("destination-in", "drawStatic", "ImageMotionPartialRender"),
+              "partial-motion-app.js": ("動かす範囲", "元画像を静止したまま残し", "ImageMotionPartialApp"),
               "gif-retimer.js": ("GIF87a", "inspectGif", "retimeGif", "delayOffset"),
               "apng-encoder.js": ("PNG_SIGNATURE", "acTL", "fdAT", "inspectApng"),
               "webp-encoder.js": ("RIFF", "VP8X", "ANIM", "ANMF"),
               "gif-encoder.js": ("GIF89a", "encodeIndexedFrames", "palette box must contain colors"),
               "app.js": ("ファイル破損とは限りません", "生成したアニメーションWebPそのもの"),
               "app-export.js": ("CanvasのWebP出力を使用しています", "別タブで保存したGIFを開き"),
-              "app-events.js": ("serviceWorker", "sw.js?v=22", "updateViaCache: 'none'"),
-              "sw.js": ("CACHE_PREFIX", "startsWith(CACHE_PREFIX)", "normalizedNavigationUrl", "ALLOWED_URLS"),
+              "app-events.js": ("PARTIAL_MOTION_SCRIPTS", "serviceWorker", "sw.js?v=22", "updateViaCache: 'none'"),
+              "sw.js": ("CACHE_PREFIX", "partial-motion-mask.js?v=1", "startsWith(CACHE_PREFIX)", "normalizedNavigationUrl", "ALLOWED_URLS"),
               "scripts/test_motion_model.mjs": ("motion model tests passed",),
+              "scripts/test_partial_motion.mjs": ("partial motion tests passed",),
               "scripts/test_gif_encoder.mjs": ("GIF encoder decode regression tests passed",),
               "scripts/test_gif_retimer.mjs": ("GIF retimer tests passed",),
               "scripts/test_apng_encoder.mjs": ("APNG encoder tests passed",),
@@ -167,6 +171,7 @@ jobs:
           LIVE_TEST_DIR: ${{ runner.temp }}/image-motion-live
         run: |
           node "${LIVE_TEST_DIR}/scripts/test_motion_model.mjs"
+          node "${LIVE_TEST_DIR}/scripts/test_partial_motion.mjs"
           node "${LIVE_TEST_DIR}/scripts/test_gif_retimer.mjs"
           node "${LIVE_TEST_DIR}/scripts/test_apng_encoder.mjs"
           node "${LIVE_TEST_DIR}/scripts/test_webp_encoder.mjs"

@@ -1,5 +1,6 @@
 'use strict';
 
+// 部分モーション追加時にAPP_SHELLを再取得させるため、Service Worker本体も更新する。
 const CACHE_PREFIX = 'image-motion-tool-v';
 const CACHE_NAME = 'image-motion-tool-v22';
 const APP_SHELL = Object.freeze([
@@ -15,6 +16,9 @@ const APP_SHELL = Object.freeze([
   './app-image.js?v=5',
   './app-export.js?v=13',
   './app-events.js?v=19',
+  './partial-motion-mask.js?v=1',
+  './partial-motion-render.js?v=1',
+  './partial-motion-app.js?v=1',
   './preview-page.js?v=2',
   './preview-page.css?v=1',
   './gif-encoder.js?v=5',

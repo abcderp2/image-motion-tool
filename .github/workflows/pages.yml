@@ -33,6 +33,9 @@ jobs:
         run: |
           node --check app-core.js
           node --check motion-model.js
+          node --check partial-motion-mask.js
+          node --check partial-motion-render.js
+          node --check partial-motion-app.js
           node --check gif-retimer.js
           node --check apng-encoder.js
           node --check webp-encoder.js
@@ -45,6 +48,7 @@ jobs:
           node --check sw.js
           node scripts/test_app_core.mjs
           node scripts/test_motion_model.mjs
+          node scripts/test_partial_motion.mjs
           node --max-old-space-size=64 scripts/test_gif_encoder.mjs
           node scripts/test_gif_retimer.mjs
           node scripts/test_apng_encoder.mjs

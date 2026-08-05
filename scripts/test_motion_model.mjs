@@ -101,4 +101,76 @@ for (const key of ['x', 'y', 'rotation', 'scaleX', 'scaleY', 'pivotX', 'pivotY']
   assertClose(reversedSquashExportEnd[key], reversedSquashExportStart[key], `reversed squash export loop ${key}`);
 }
 
+const staticGeometry = motionModel.staticGeometry(
+  { zoom: 100, offsetX: 0, offsetY: 0, flipped: false },
+  400,
+  200,
+  360,
+  360,
+);
+assert.equal(staticGeometry.drawWidth, 360);
+assert.equal(staticGeometry.drawHeight, 180);
+assert.equal(staticGeometry.left, 0);
+assert.equal(staticGeometry.top, 90);
+
+const sourcePoint = motionModel.sourcePointAt(
+  { zoom: 100, offsetX: 0, offsetY: 0, flipped: false },
+  400,
+  200,
+  360,
+  360,
+  90,
+  135,
+);
+assert.ok(sourcePoint);
+assertClose(sourcePoint.x, 0.25, 'source point x');
+assertClose(sourcePoint.y, 0.25, 'source point y');
+assert.equal(motionModel.sourcePointAt(
+  { zoom: 100, offsetX: 0, offsetY: 0, flipped: false },
+  400,
+  200,
+  360,
+  360,
+  90,
+  40,
+), null);
+
+const flippedPoint = motionModel.sourcePointAt(
+  { zoom: 100, offsetX: 0, offsetY: 0, flipped: true },
+  400,
+  200,
+  360,
+  360,
+  90,
+  135,
+);
+assert.ok(flippedPoint);
+assertClose(flippedPoint.x, 0.75, 'flipped source point x');
+
+const frameGeometry = motionModel.frameGeometry(
+  { zoom: 100, offsetX: 0, offsetY: 0, flipped: false },
+  400,
+  200,
+  360,
+  360,
+  { x: 18, y: -9, rotation: 5, scaleX: 1.1, scaleY: 0.9, pivotX: 0.5, pivotY: 1 },
+);
+assertClose(frameGeometry.centerX, 198, 'frame center x');
+assertClose(frameGeometry.centerY, 171, 'frame center y');
+assertClose(frameGeometry.drawWidth, 396, 'frame draw width');
+assertClose(frameGeometry.drawHeight, 162, 'frame draw height');
+assertClose(frameGeometry.pivotX, 198, 'frame pivot x');
+assertClose(frameGeometry.pivotY, 261, 'frame pivot y');
+assert.equal(frameGeometry.rotation, 5);
+
+const normalMask = motionModel.maskDimensions(4000, 2000, 1024, 786432);
+assert.equal(normalMask.width, 1024);
+assert.equal(normalMask.height, 512);
+assert.ok(normalMask.width * normalMask.height <= 786432);
+const lowMemoryMask = motionModel.maskDimensions(4000, 3000, 640, 786432);
+assert.equal(Math.max(lowMemoryMask.width, lowMemoryMask.height), 640);
+assert.ok(lowMemoryMask.width * lowMemoryMask.height <= 786432);
+const smallMask = motionModel.maskDimensions(320, 240, 1024, 786432);
+assert.deepEqual(smallMask, { width: 320, height: 240, scale: 1 });
+
 console.log('motion model tests passed');
