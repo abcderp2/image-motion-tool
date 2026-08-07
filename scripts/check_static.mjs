@@ -83,6 +83,7 @@ assert.match(pagesWorkflow, /node --check app-core\.js/);
 assert.match(pagesWorkflow, /node scripts\/test_service_worker\.mjs/);
 assert.match(pagesWorkflow, /node scripts\/check_static\.mjs/);
 assert.match(pagesWorkflow, /permissions:\s+contents: read/);
+assert.match(pagesWorkflow, /group:\s+pages-\$\{\{ github\.workflow \}\}-\$\{\{ github\.ref \}\}/);
 assert.match(encoder, /transparent \? 0x09 : 0x04/);
 assert.match(encoder, /colors\.length - 1/);
 assert.match(encoder, /palette box must contain colors/);
@@ -104,6 +105,7 @@ assert.match(serviceWorkerTest, /build=21-check/);
 assert.match(liveWorkflow, /application_version/);
 assert.match(liveWorkflow, /same_site/);
 assert.match(liveWorkflow, /test_service_worker\.mjs/);
+assert.match(liveWorkflow, /workflow_run:[\s\S]*?branches:\s*- main/);
 assert.doesNotMatch(liveWorkflow, /Build 12|app\.js\?v=10|sw\.js\?v=12/);
 for (const asset of ['app.css?v=6', 'app-core.js?v=6', 'motion-model.js?v=7', 'gif-retimer.js?v=1', 'apng-encoder.js?v=2', 'webp-encoder.js?v=2', 'app.js?v=18', 'app-image.js?v=5', 'app-export.js?v=13', 'app-events.js?v=19', 'preview-page.js?v=2', 'preview-page.css?v=1', 'gif-encoder.js?v=5', 'gif-worker.js?v=5']) {
   assert.ok(sw.includes(`'./${asset}'`), `sw.js is missing ${asset}`);
