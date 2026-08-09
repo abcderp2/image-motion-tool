@@ -59,9 +59,11 @@ Service WorkerはAPP_SHELLに列挙した固定ファイルだけをキャッシ
 
 ## 静的ホスティング上の限界
 
-GitHub Pagesでは任意のHTTPレスポンスヘッダーを設定できないため、Content Security PolicyとPermissions-PolicyはHTML内で明示しています。meta要素で利用できない方針もあるため、埋め込み禁止はJavaScript側でも検出します。
+GitHub Pagesでは、このリポジトリの静的ファイルだけから任意のHTTPレスポンスヘッダーを自由に設定できません。Content Security Policyはmeta要素で適用できる指示だけをHTML内で維持します。Permissions-Policyはhttp-equiv metaで配信できる方針として扱わず、効いているセキュリティ防御としてHTMLや自動テストへ残しません。
 
-HTTPレスポンスヘッダーを設定できる環境へ移行する場合は、frame-ancestors 'none'、X-Content-Type-Options: nosniff、必要最小限のPermissions-Policy、適切なReferrer-Policyを追加します。
+frame-ancestorsはCSPのmeta要素では適用できません。iframe内の実行をアプリ側で検出して停止する処理は補助的な対策であり、HTTPレスポンスヘッダーによる埋め込み禁止と同等とは扱いません。
+
+現在は認証、決済、外部への機密データ送信、カメラ、マイク、位置情報、USBを必要とする機能を持たないため、ヘッダー設定のためだけに外部サービスや複雑な配信構成を追加しません。HTTPレスポンスヘッダーを設定できる環境へ移行する場合は、frame-ancestors 'none'、X-Content-Type-Options: nosniff、必要最小限のPermissions-Policy、適切なReferrer-Policyを追加します。
 
 robots.txtとai.txtは公開方針であり、認証やアクセス制御ではありません。
 
