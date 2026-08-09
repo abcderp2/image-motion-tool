@@ -38,7 +38,7 @@ const serviceWorkerTest = await readFile(new URL('scripts/test_service_worker.mj
 assert.match(index, /Content-Security-Policy/);
 assert.match(index, /connect-src 'none'/);
 assert.match(index, /object-src 'none'/);
-assert.match(index, /Permissions-Policy/);
+assert.doesNotMatch(index, /http-equiv=["']Permissions-Policy["']/i);
 assert.match(index, /href="ai\.txt"/);
 assert.match(robots, /User-agent:\s*\*/);
 assert.match(robots, /Sitemap:/);
