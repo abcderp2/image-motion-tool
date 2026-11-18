@@ -77,7 +77,11 @@ assert.match(appEvents, /updateViaCache: 'none'/);
 assert.match(worker, /gif-encoder\.js\?v=5/);
 assert.match(sw, /image-motion-tool-v22/);
 assert.match(pagesWorkflow, /persist-credentials: false/);
-assert.match(pagesWorkflow, /actions\/setup-node@v5/);
+assert.match(
+  pagesWorkflow,
+  /^[ \t]*(?:-[ \t]+)?uses:[ \t]+actions\/setup-node@[0-9a-f]{40}(?:[ \t]+#.*)?[ \t]*$/m,
+  'pages.yml must pin actions/setup-node to a full commit SHA',
+);
 assert.match(pagesWorkflow, /node-version: 24/);
 assert.match(pagesWorkflow, /node --check app-core\.js/);
 assert.match(pagesWorkflow, /node scripts\/test_service_worker\.mjs/);
